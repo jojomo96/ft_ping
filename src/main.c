@@ -107,17 +107,31 @@ size_t create_icmp_packet(char *packet, int pid, int seq) {
     return total_size;
 }
 
+void set_socket_timeout(int sockfd) {
+    struct timeval timeout;
+    timeout.tv_sec = 1; // Set timeout to 1 second
+    timeout.tv_usec = 0;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
+        perror("setsockopt failed");
+        close(sockfd);
+        exit(1);
+    }
+}
+
 int main(int argc, char *argv[]) {
     struct sockaddr_in dest_addr;
     int sockfd;
     char packet[sizeof(struct icmp_header) + PAYLOAD_SIZE];
+    int seq = 1;
 
     parse_flags_and_target(argc, argv);
 
     dest_addr = get_dest_addr(target);
     sockfd = create_raw_socket();
 
-    const size_t len = create_icmp_packet(packet, getpid(), 1);
+    set_socket_timeout(sockfd);
+
+    const size_t len = create_icmp_packet(packet, getpid(), seq);
     if (sendto(sockfd, packet, len, 0, (struct sockaddr *) &dest_addr, sizeof(dest_addr)) < 0) {
         perror("sendto failed");
         close(sockfd);
@@ -136,7 +150,7 @@ int main(int argc, char *argv[]) {
 
     if (flags.verbose) {
         printf("Received %ld bytes from %s: icmp_seq=%d ttl=%d\n",
-               bytes_received, target, 1, 64);  // For simplicity, assuming TTL=64 here
+               bytes_received, target, seq, 64);  // For simplicity, assuming TTL=64 here
     }
 
     close(sockfd);
