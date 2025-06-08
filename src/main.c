@@ -5,8 +5,9 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-
 #include <sys/time.h>
+#include <netinet/ip.h>
+
 
 
 char *target = NULL;
@@ -87,7 +88,6 @@ unsigned short checksum(void *b, int len) {
     return result;
 }
 
-
 size_t create_icmp_packet(char *packet, int pid, int seq) {
     struct icmp_header *icmp = (struct icmp_header *) packet;
 
@@ -124,11 +124,72 @@ void set_socket_timeout(int sockfd) {
     }
 }
 
+void recv_icmp_reply(const int sockfd, const int pid) {
+    char recv_buf[1024];
+    struct sockaddr_in sender_addr;
+    struct iovec iov;
+    struct msghdr msg;
+    char control[1024];
+
+    ft_memset(&msg, 0, sizeof(msg));
+    ft_memset(&sender_addr, 0, sizeof(sender_addr));
+
+    iov.iov_base = recv_buf;
+    iov.iov_len = sizeof(recv_buf);
+
+    msg.msg_name = &sender_addr;
+    msg.msg_namelen = sizeof(sender_addr);
+    msg.msg_iov = &iov;
+    msg.msg_iovlen = 1;
+    msg.msg_control = control;
+    msg.msg_controllen = sizeof(control);
+
+    const ssize_t bytes_received = recvmsg(sockfd, &msg, 0);
+    if (bytes_received < 0) {
+        perror("recvmsg failed");
+        return;
+    }
+
+    // Parse IPv4 header
+    struct ip *ip_header = (struct ip *) recv_buf;
+    int ip_header_len = ip_header->ip_hl * 4;
+
+    if (bytes_received < ip_header_len + (ssize_t)sizeof(struct icmp_header)) {
+        fprintf(stderr, "Packet too short\n");
+        return;
+    }
+
+    // Parse ICMP header
+    struct icmp_header *icmp = (struct icmp_header *)(recv_buf + ip_header_len);
+
+    if (icmp->type != ICMP_ECHOREPLY || ntohs(icmp->id) != pid) {
+        return; // Not our packet
+    }
+
+    // RTT calculation
+    struct timeval *sent_time = (struct timeval *)(recv_buf + ip_header_len + sizeof(struct icmp_header));
+    struct timeval now, rtt;
+    gettimeofday(&now, NULL);
+    timersub(&now, sent_time, &rtt);
+
+    // Convert sender address to readable IP
+    char ip_str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &sender_addr.sin_addr, ip_str, sizeof(ip_str));
+
+    printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%ld.%03d ms\n",
+           bytes_received - ip_header_len,
+           ip_str,
+           ntohs(icmp->sequence),
+           ip_header->ip_ttl,
+           rtt.tv_sec * 1000L + rtt.tv_usec / 1000,
+           rtt.tv_usec % 1000);
+}
+
 int main(int argc, char *argv[]) {
     parse_flags_and_target(argc, argv);
+    char packet[sizeof(struct icmp_header) + PAYLOAD_SIZE];
 
     int sockfd;
-    char packet[sizeof(struct icmp_header) + PAYLOAD_SIZE];
     int seq = 1;
 
 
@@ -144,20 +205,7 @@ int main(int argc, char *argv[]) {
     }
 
 
-    // Receive the ICMP reply (optional verbose output)
-    char recv_buf[1024];
-    struct sockaddr_in sender_addr;
-    socklen_t addr_len = sizeof(dest_addr);
-    const ssize_t bytes_received = recvfrom(sockfd, recv_buf, sizeof(recv_buf), 0, (struct sockaddr *)&sender_addr, &addr_len);
-    if (bytes_received < 0) {
-        perror("Receive failed");
-        exit(1);
-    }
-
-    if (flags.verbose) {
-        printf("Received %ld bytes from %s: icmp_seq=%d ttl=%d\n",
-               bytes_received, target, seq, 64);  // For simplicity, assuming TTL=64 here
-    }
+    recv_icmp_reply(sockfd, getpid());
 
     close(sockfd);
     return 0;
