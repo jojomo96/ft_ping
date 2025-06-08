@@ -1,9 +1,9 @@
 #include "ft_ping.h"
 
-
 char *target = NULL;
 t_flags flags = {0};
 struct sockaddr_in dest_addr;
+int should_stop = 0;
 
 int send_icmp_request(int sockfd, struct sockaddr_in *dest, int pid, int seq) {
     char packet[sizeof(struct icmp_header) + PAYLOAD_SIZE];
@@ -42,7 +42,7 @@ int send_icmp_request(int sockfd, struct sockaddr_in *dest, int pid, int seq) {
     return 0;
 }
 
-void recv_icmp_reply(const int sockfd, const int pid) {
+int recv_icmp_reply(const int sockfd, const int pid) {
     char recv_buf[1024];
     struct sockaddr_in sender_addr;
     struct iovec iov;
@@ -65,7 +65,7 @@ void recv_icmp_reply(const int sockfd, const int pid) {
     const ssize_t bytes_received = recvmsg(sockfd, &msg, 0);
     if (bytes_received < 0) {
         perror("recvmsg failed");
-        return;
+        return 0;
     }
 
     // Parse IPv4 header
@@ -74,14 +74,14 @@ void recv_icmp_reply(const int sockfd, const int pid) {
 
     if (bytes_received < ip_header_len + (ssize_t) sizeof(struct icmp_header)) {
         fprintf(stderr, "Packet too short\n");
-        return;
+        return 0;
     }
 
     // Parse ICMP header
     struct icmp_header *icmp = (struct icmp_header *) (recv_buf + ip_header_len);
 
     if (icmp->type != ICMP_ECHOREPLY || ntohs(icmp->id) != pid) {
-        return; // Not our packet
+        return 0; // Not our Echo Reply
     }
 
     // RTT calculation
@@ -90,7 +90,7 @@ void recv_icmp_reply(const int sockfd, const int pid) {
     gettimeofday(&now, NULL);
     timersub(&now, sent_time, &rtt);
 
-    // Convert sender address to readable IP
+    // Convert sender IP to string
     char ip_str[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &sender_addr.sin_addr, ip_str, sizeof(ip_str));
 
@@ -101,6 +101,21 @@ void recv_icmp_reply(const int sockfd, const int pid) {
            ip_header->ip_ttl,
            rtt.tv_sec * 1000L + rtt.tv_usec / 1000,
            rtt.tv_usec % 1000);
+
+    return 1; // Success
+}
+
+
+void print_summary(int sent, int received, struct timeval start, struct timeval end) {
+    struct timeval duration;
+    timersub(&end, &start, &duration);
+    double elapsed = duration.tv_sec * 1000.0 + duration.tv_usec / 1000.0;
+
+    printf("\n--- %s ping statistics ---\n", target);
+    printf("%d packets transmitted, %d received, %.0f%% packet loss, time %.0fms\n",
+           sent, received,
+           sent > 0 ? ((sent - received) * 100.0 / sent) : 0.0,
+           elapsed);
 }
 
 int main(int argc, char *argv[]) {
@@ -108,11 +123,38 @@ int main(int argc, char *argv[]) {
     resolve_destination(target);
 
     int sockfd = create_raw_socket_with_timeout();
-    int seq = 1;
     int pid = getpid();
 
-    send_icmp_request(sockfd, &dest_addr, pid, seq);
-    recv_icmp_reply(sockfd, pid);
+    int seq = 1;
+    int sent = 0;
+    int received = 0;
+
+    signal(SIGINT, handle_interrupt);
+    signal(SIGTERM, handle_interrupt);
+
+    struct timeval start_time, end_time;
+    gettimeofday(&start_time, NULL);
+
+    while (!should_stop && (flags.count == 0 || sent < flags.count)) {
+        if (send_icmp_request(sockfd, &dest_addr, pid, seq) == 0)
+            sent++;
+
+        if (recv_icmp_reply(sockfd, pid)) {
+            received++;
+        }
+
+        seq++;
+
+        if (!should_stop && (flags.count == 0 || sent < flags.count)) {
+            if (flags.interval > 0)
+                usleep(flags.interval * 1000000);
+            else
+                usleep(1000000);  // default 1 second interval
+        }
+    }
+
+    gettimeofday(&end_time, NULL);
+    print_summary(sent, received, start_time, end_time);
 
     close(sockfd);
     return 0;

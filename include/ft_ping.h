@@ -27,12 +27,17 @@ struct icmp_header {
 } __attribute__((packed));
 
 typedef struct s_flags {
-    int verbose;
+    int count; // from -c
+    int interval; // from -i
+    int timeout; // from -W
+    int verbose; // from -v
+    int ttl; // from -t
 } t_flags;
 
 extern char *target;
 extern t_flags flags;
 extern struct sockaddr_in dest_addr;
+extern int should_stop;
 
 uint16_t checksum(void *data, int len);
 
@@ -43,5 +48,7 @@ void resolve_destination(const char *hostname);
 void set_socket_timeout(int sockfd);
 
 int create_raw_socket_with_timeout();
+
+void handle_interrupt(int sig);
 
 #endif //HEADER_H

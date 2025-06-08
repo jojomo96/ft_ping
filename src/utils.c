@@ -82,3 +82,8 @@ int create_raw_socket_with_timeout() {
     set_socket_timeout(sockfd);
     return sockfd;
 }
+
+void handle_interrupt(const int sig) {
+    (void)sig;
+    should_stop = 1;
+}
