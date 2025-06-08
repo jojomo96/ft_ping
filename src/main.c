@@ -12,6 +12,8 @@
 char *target = NULL;
 t_flags flags = {0};
 
+struct sockaddr_in dest_addr;
+
 void parse_flags_and_target(int argc, char **argv) {
     int c;
     while ((c = ft_getopt(argc, argv, "v?")) != -1) {
@@ -40,17 +42,21 @@ void parse_flags_and_target(int argc, char **argv) {
     target = argv[ft_optind];
 }
 
-struct sockaddr_in get_dest_addr(const char *hostname) {
+void resolve_destination(const char *hostname) {
     struct addrinfo hints, *res;
     ft_memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET; // IPv4
+    hints.ai_socktype = SOCK_RAW;
+    hints.ai_protocol = IPPROTO_ICMP;
+
     if (getaddrinfo(hostname, NULL, &hints, &res) != 0) {
         fprintf(stderr, "Error resolving hostname: %s\n", hostname);
         exit(1);
     }
-    const struct sockaddr_in dest_addr = *(struct sockaddr_in *) res->ai_addr;
+
+    ft_memcpy(&dest_addr, res->ai_addr, sizeof(struct sockaddr_in));
+
     freeaddrinfo(res);
-    return dest_addr;
 }
 
 int create_raw_socket() {
@@ -119,16 +125,15 @@ void set_socket_timeout(int sockfd) {
 }
 
 int main(int argc, char *argv[]) {
-    struct sockaddr_in dest_addr;
+    parse_flags_and_target(argc, argv);
+
     int sockfd;
     char packet[sizeof(struct icmp_header) + PAYLOAD_SIZE];
     int seq = 1;
 
-    parse_flags_and_target(argc, argv);
 
-    dest_addr = get_dest_addr(target);
+    resolve_destination(target);
     sockfd = create_raw_socket();
-
     set_socket_timeout(sockfd);
 
     const size_t len = create_icmp_packet(packet, getpid(), seq);
@@ -141,8 +146,9 @@ int main(int argc, char *argv[]) {
 
     // Receive the ICMP reply (optional verbose output)
     char recv_buf[1024];
+    struct sockaddr_in sender_addr;
     socklen_t addr_len = sizeof(dest_addr);
-    const ssize_t bytes_received = recvfrom(sockfd, recv_buf, sizeof(recv_buf), 0, (struct sockaddr *)&dest_addr, &addr_len);
+    const ssize_t bytes_received = recvfrom(sockfd, recv_buf, sizeof(recv_buf), 0, (struct sockaddr *)&sender_addr, &addr_len);
     if (bytes_received < 0) {
         perror("Receive failed");
         exit(1);
