@@ -1,127 +1,45 @@
-#include "libft/ft_getopt.h"
-#include "libft/libft.h"
 #include "ft_ping.h"
-
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <sys/time.h>
-#include <netinet/ip.h>
-
 
 
 char *target = NULL;
 t_flags flags = {0};
-
 struct sockaddr_in dest_addr;
 
-void parse_flags_and_target(int argc, char **argv) {
-    int c;
-    while ((c = ft_getopt(argc, argv, "v?")) != -1) {
-        switch (c) {
-            case 'v':
-                flags.verbose = 1;
-                break;
-            case '?':
-                printf("Usage: ft_ping [-v] <hostname/IP>\n");
-                exit(0);
-            default:
-                fprintf(stderr, "Usage: ft_ping [-v] <hostname/IP>\n");
-                exit(1);
-        }
-    }
+int send_icmp_request(int sockfd, struct sockaddr_in *dest, int pid, int seq) {
+    char packet[sizeof(struct icmp_header) + PAYLOAD_SIZE];
+    ft_memset(packet, 0, sizeof(packet));
 
-    for (int i = ft_optind; i < argc; ++i) {
-        printf("non-option arg: %s\n", argv[i]);
-    }
-
-    if (ft_optind >= argc) {
-        fprintf(stderr, "Expected argument after options\n");
-        exit(1);
-    }
-
-    target = argv[ft_optind];
-}
-
-void resolve_destination(const char *hostname) {
-    struct addrinfo hints, *res;
-    ft_memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET; // IPv4
-    hints.ai_socktype = SOCK_RAW;
-    hints.ai_protocol = IPPROTO_ICMP;
-
-    if (getaddrinfo(hostname, NULL, &hints, &res) != 0) {
-        fprintf(stderr, "Error resolving hostname: %s\n", hostname);
-        exit(1);
-    }
-
-    ft_memcpy(&dest_addr, res->ai_addr, sizeof(struct sockaddr_in));
-
-    freeaddrinfo(res);
-}
-
-int create_raw_socket() {
-    int sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-    if (sockfd < 0) {
-        perror("Socket creation failed");
-        exit(1);
-    }
-    return sockfd;
-}
-
-unsigned short checksum(void *b, int len) {
-    unsigned short *buf = b;
-    unsigned int sum = 0;
-    unsigned short result;
-
-    for (sum = 0; len > 1; len -= 2) {
-        sum += *buf++;
-    }
-
-    if (len == 1) {
-        sum += *(unsigned char *) buf;
-    }
-
-    sum = (sum >> 16) + (sum & 0xFFFF);
-    sum += (sum >> 16);
-    result = ~sum;
-    return result;
-}
-
-size_t create_icmp_packet(char *packet, int pid, int seq) {
+    // Build ICMP header
     struct icmp_header *icmp = (struct icmp_header *) packet;
+    icmp->type = ICMP_ECHO;
+    icmp->code = 0;
+    icmp->checksum = 0;
+    icmp->id = htons(pid);
+    icmp->sequence = htons(seq);
 
-    // Fill the ICMP header
-    icmp->type = ICMP_ECHO; // Echo request
-    icmp->code = 0; // No code for echo request
-    icmp->checksum = 0; // Initially set to 0 for checksum calculation
-    icmp->id = htons(pid); // Set the process ID
-    icmp->sequence = htons(seq); // Set the sequence number
-
-    // Fill the payload with current time + padding
+    // Add timestamp payload for RTT measurement
     struct timeval *tv = (struct timeval *) (packet + sizeof(struct icmp_header));
     gettimeofday(tv, NULL);
 
-    // Fill the rest of the payload with a pattern
-    ft_memset(packet + sizeof(struct icmp_header) + sizeof(struct timeval), 0x42,
-              PAYLOAD_SIZE - sizeof(struct timeval));
-
-    // Calculate checksum over entire packet
-    size_t total_size = sizeof(struct icmp_header) + PAYLOAD_SIZE;
-    icmp->checksum = checksum(packet, total_size);
-
-    return total_size;
-}
-
-void set_socket_timeout(int sockfd) {
-    struct timeval timeout;
-    timeout.tv_sec = 1; // Set timeout to 1 second
-    timeout.tv_usec = 0;
-    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
-        perror("setsockopt failed");
-        close(sockfd);
-        exit(1);
+    // Fill rest of payload with dummy pattern ('A', 'B', ...)
+    for (int i = sizeof(struct timeval); i < PAYLOAD_SIZE; i++) {
+        packet[sizeof(struct icmp_header) + i] = 'A' + (i % 26);
     }
+
+    // Calculate checksum over entire ICMP packet
+    size_t packet_size = sizeof(packet);
+    icmp->checksum = checksum(packet, packet_size);
+
+    // Send packet
+    ssize_t sent = sendto(sockfd, packet, packet_size, 0,
+                          (struct sockaddr *) dest, sizeof(*dest));
+
+    if (sent < 0) {
+        perror("sendto failed");
+        return -1;
+    }
+
+    return 0;
 }
 
 void recv_icmp_reply(const int sockfd, const int pid) {
@@ -154,20 +72,20 @@ void recv_icmp_reply(const int sockfd, const int pid) {
     struct ip *ip_header = (struct ip *) recv_buf;
     int ip_header_len = ip_header->ip_hl * 4;
 
-    if (bytes_received < ip_header_len + (ssize_t)sizeof(struct icmp_header)) {
+    if (bytes_received < ip_header_len + (ssize_t) sizeof(struct icmp_header)) {
         fprintf(stderr, "Packet too short\n");
         return;
     }
 
     // Parse ICMP header
-    struct icmp_header *icmp = (struct icmp_header *)(recv_buf + ip_header_len);
+    struct icmp_header *icmp = (struct icmp_header *) (recv_buf + ip_header_len);
 
     if (icmp->type != ICMP_ECHOREPLY || ntohs(icmp->id) != pid) {
         return; // Not our packet
     }
 
     // RTT calculation
-    struct timeval *sent_time = (struct timeval *)(recv_buf + ip_header_len + sizeof(struct icmp_header));
+    struct timeval *sent_time = (struct timeval *) (recv_buf + ip_header_len + sizeof(struct icmp_header));
     struct timeval now, rtt;
     gettimeofday(&now, NULL);
     timersub(&now, sent_time, &rtt);
@@ -187,25 +105,14 @@ void recv_icmp_reply(const int sockfd, const int pid) {
 
 int main(int argc, char *argv[]) {
     parse_flags_and_target(argc, argv);
-    char packet[sizeof(struct icmp_header) + PAYLOAD_SIZE];
-
-    int sockfd;
-    int seq = 1;
-
-
     resolve_destination(target);
-    sockfd = create_raw_socket();
-    set_socket_timeout(sockfd);
 
-    const size_t len = create_icmp_packet(packet, getpid(), seq);
-    if (sendto(sockfd, packet, len, 0, (struct sockaddr *) &dest_addr, sizeof(dest_addr)) < 0) {
-        perror("sendto failed");
-        close(sockfd);
-        exit(1);
-    }
+    int sockfd = create_raw_socket_with_timeout();
+    int seq = 1;
+    int pid = getpid();
 
-
-    recv_icmp_reply(sockfd, getpid());
+    send_icmp_request(sockfd, &dest_addr, pid, seq);
+    recv_icmp_reply(sockfd, pid);
 
     close(sockfd);
     return 0;
