@@ -102,6 +102,11 @@ int recv_icmp_reply(const int sockfd, const int pid) {
            rtt.tv_sec * 1000L + rtt.tv_usec / 1000,
            rtt.tv_usec % 1000);
 
+    if (flags.verbose) {
+        printf("Sent ICMP packet: type=%d code=%d id=%d seq=%d checksum=0x%04x\n",
+               icmp->type, icmp->code, ntohs(icmp->id), ntohs(icmp->sequence), icmp->checksum);
+    }
+
     return 1; // Success
 }
 
@@ -125,7 +130,7 @@ int main(int argc, char *argv[]) {
     int sockfd = create_raw_socket_with_timeout();
     int pid = getpid();
 
-    int seq = 1;
+    int seq = 0;
     int sent = 0;
     int received = 0;
 

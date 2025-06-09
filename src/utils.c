@@ -1,3 +1,5 @@
+
+
 #include "ft_ping.h"
 
 uint16_t checksum(void *data, int len) {
@@ -19,10 +21,23 @@ uint16_t checksum(void *data, int len) {
 
 void parse_flags_and_target(int argc, char **argv) {
     int c;
-    while ((c = ft_getopt(argc, argv, "v?")) != -1) {
+    while ((c = ft_getopt(argc, argv, "c:v?")) != -1) {
         switch (c) {
             case 'v':
                 flags.verbose = 1;
+                break;
+            case 'c':
+                errno = 0;
+                char *endptr;
+                long val = strtol(ft_optarg, &endptr, 10);
+
+                // Check for various possible errors
+                if (errno != 0 || *endptr != '\0' || val <= 0 || val > INT_MAX) {
+                    fprintf(stderr, "Invalid count: %s\n", ft_optarg);
+                    exit(1);
+                }
+
+                flags.count = (int)val;
                 break;
             case '?':
                 printf("Usage: ft_ping [-v] <hostname/IP>\n");
@@ -31,15 +46,6 @@ void parse_flags_and_target(int argc, char **argv) {
                 fprintf(stderr, "Usage: ft_ping [-v] <hostname/IP>\n");
                 exit(1);
         }
-    }
-
-    for (int i = ft_optind; i < argc; ++i) {
-        printf("non-option arg: %s\n", argv[i]);
-    }
-
-    if (ft_optind >= argc) {
-        fprintf(stderr, "Expected argument after options\n");
-        exit(1);
     }
 
     target = argv[ft_optind];
@@ -68,6 +74,13 @@ void set_socket_timeout(int sockfd) {
     timeout.tv_usec = 0;
     if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
         perror("setsockopt failed");
+        close(sockfd);
+        exit(1);
+    }
+
+    int ttl = flags.ttl > 0 ? flags.ttl : 5; // Default TTL is 64
+    if (setsockopt(sockfd, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) < 0) {
+        perror("setsockopt TTL failed");
         close(sockfd);
         exit(1);
     }

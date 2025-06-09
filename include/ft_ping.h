@@ -12,6 +12,8 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <netinet/ip.h>
+#include <limits.h>
+#include <sys/errno.h>
 
 
 #define ICMP_ECHO       8
