@@ -86,10 +86,10 @@ void parse_args(int argc, char **argv) {
 
             /* iterate over cluster: e.g. "-vq" becomes 'v' then 'q'    */
             for (size_t j = 1; arg[j]; ++j) {
-                char opt = arg[j];
+                const char opt = arg[j];
                 int needs_arg = 0;
                 if (!lookup_option(opt, &needs_arg)) {
-                    ping_error_exit(1, PING_ERR_UNKNOWN_OPTION, (int)opt);
+                    ping_error_exit(1, PING_ERR_UNKNOWN_OPTION, (int) opt);
                     usage(1);
                 }
 
@@ -124,27 +124,27 @@ void parse_args(int argc, char **argv) {
                     else if (i + 1 < argc) {
                         val = argv[++i];
                     } else {
-                        ping_error_exit(1, PING_ERR_OPTION_REQUIRES_ARG, (int)opt);
+                        ping_error_exit(1, PING_ERR_OPTION_REQUIRES_ARG, (int) opt);
                         usage(1);
                     }
 
                     /* Special handling for -i (interval): enforce minimum. */
                     if (opt == 'i') {
                         if (!ft_str_is_double(val)) {
-                            ping_error_exit(2, PING_ERR_INVALID_NUMERIC_ARG, val, (int)opt);
+                            ping_error_exit(2, PING_ERR_INVALID_NUMERIC_ARG, val, (int) opt);
                         }
                         const double seconds = ft_atof(val);
                         /* Reject <= 0 and anything that would round down to 0ms. */
-                        if (seconds <= 0.0 || (int)(seconds * 1000.0) < 1) {
+                        if (seconds <= 0.0 || (int) (seconds * 1000.0) < 1) {
                             ping_error_exit(2, PING_ERR_INTERVAL_TOO_SHORT);
                         }
-                        flags.interval_ms = (int)(seconds * 1000.0);
+                        flags.interval_ms = (int) (seconds * 1000.0);
                         continue;
                     }
 
                     /* validate numeric argument */
                     if (!ft_str_is_number(val)) {
-                        ping_error_exit(1, PING_ERR_INVALID_NUMERIC_ARG, val, (int)opt);
+                        ping_error_exit(1, PING_ERR_INVALID_NUMERIC_ARG, val, (int) opt);
                         usage(1);
                     }
 
