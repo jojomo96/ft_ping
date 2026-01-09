@@ -11,7 +11,8 @@ static void usage(int exit_code) {
             "  -i <ms>        interval between pings (milliseconds)\n"
             "  -t <ttl>       set IPv4 TTL / IPv6 hop-limit\n"
             "  -s <bytes>     payload size (default 56)\n"
-            "  -?             show this help and exit\n");
+            "  -?             show this help and exit\n"
+    );
     exit(exit_code);
 }
 
@@ -75,7 +76,8 @@ void parse_args(const int argc, char **argv) {
                 while (i < argc) {
                     fprintf(stderr,
                             "ft_ping: unexpected extra argument '%s'\n",
-                            argv[i++]);
+                            argv[i++]
+                    );
                 }
                 break;
             }
@@ -85,7 +87,8 @@ void parse_args(const int argc, char **argv) {
                 int needs_arg;
                 if (!lookup_option(arg[j], &needs_arg)) {
                     fprintf(stderr,
-                            "ft_ping: unknown option '-%c'\n", arg[j]);
+                            "ft_ping: unknown option '-%c'\n", arg[j]
+                    );
                     usage(1);
                 }
 
@@ -107,23 +110,40 @@ void parse_args(const int argc, char **argv) {
                     } else {
                         fprintf(stderr,
                                 "ft_ping: option '-%c' "
-                                "requires an argument\n", arg[j]);
+                                "requires an argument\n", arg[j]
+                        );
                         usage(1);
+                    }
+
+                    /* Special handling for -i (interval): enforce minimum. */
+                    if (arg[j] == 'i') {
+                        if (!ft_str_is_double(val)) {
+                            fprintf(stderr,
+                                    "ft_ping: invalid numeric arg '%s' for -%c\n",
+                                    val, arg[j]
+                            );
+                            exit(2);
+                        }
+                        const double seconds = ft_atof(val);
+                        /* Minimum 1ms (like ping requiring privileges for shorter intervals). */
+                        if (seconds <= 0) {
+                            fprintf(stderr, "ft_ping: -i interval too short: Operation not permitted\n");
+                            exit(2);
+                        }
+                        flags.interval_ms = (int) (seconds * 1000.0);
+                        continue;
                     }
 
                     /* validate numeric argument */
                     if (!ft_str_is_number(val)) {
-                        fprintf(stderr,
-                                "ft_ping: invalid numeric arg '%s' for -%c\n",
-                                val, arg[j]);
+                        fprintf(stderr, "ft_ping: invalid numeric arg '%s' for -%c\n", val, arg[j]
+                        );
                         usage(1);
                     }
 
                     int num = ft_atoi(val);
                     switch (arg[j]) {
                         case 'c': flags.count = num;
-                            break;
-                        case 'i': flags.interval_ms = num;
                             break;
                         case 't': flags.ttl = num;
                             break;
@@ -151,7 +171,8 @@ void parse_args(const int argc, char **argv) {
             if (target) {
                 fprintf(stderr,
                         "ft_ping: multiple destinations: '%s' and '%s'\n",
-                        target, arg);
+                        target, arg
+                );
                 usage(1);
             }
             target = arg;
