@@ -30,10 +30,12 @@ struct icmp_header {
 
 typedef struct s_flags {
     int count; // from -c
-    int interval; // from -i
+    int interval_ms; // from -i
     int timeout; // from -W
     int verbose; // from -v
     int ttl; // from -t
+    int payload_size; // from -s
+    int quiet; // from -q
 } t_flags;
 
 extern char *target;
@@ -52,5 +54,7 @@ void set_socket_timeout(int sockfd);
 int create_raw_socket_with_timeout();
 
 void handle_interrupt(int sig);
+
+void parse_args(const int argc, char **argv);
 
 #endif //HEADER_H
