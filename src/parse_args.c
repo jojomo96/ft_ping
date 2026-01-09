@@ -50,7 +50,7 @@ static int lookup_option(char c, int *needs_arg) {
 
 /* -------- main parse routine ----------------------------------------- */
 
-void parse_args(const int argc, char **argv) {
+void parse_args(int argc, char **argv) {
     // Use global variables directly
     flags = (t_flags){
         .verbose = 0,
@@ -74,26 +74,41 @@ void parse_args(const int argc, char **argv) {
                 if (i < argc && !target)
                     target = argv[i++];
                 while (i < argc) {
+                    /* Not a dedicated error code yet; keep message style consistent. */
                     fprintf(stderr,
                             "ft_ping: unexpected extra argument '%s'\n",
                             argv[i++]
                     );
+                    //TODO print help
                 }
                 break;
             }
 
             /* iterate over cluster: e.g. "-vq" becomes 'v' then 'q'    */
             for (size_t j = 1; arg[j]; ++j) {
-                int needs_arg;
+                int needs_arg = 0;
                 if (!lookup_option(arg[j], &needs_arg)) {
-                    fprintf(stderr,
-                            "ft_ping: unknown option '-%c'\n", arg[j]
-                    );
+                    ping_error_exit(1, PING_ERR_UNKNOWN_OPTION, (int)arg[j]);
                     usage(1);
                 }
 
-                /* ---- flag takes an argument --------------------- */
-                if (needs_arg) {
+                /* ---- simple flag, no argument ------------------- */
+                if (!needs_arg) {
+                    switch (arg[j]) {
+                        case 'v': flags.verbose = 1;
+                            break;
+                        case 'q': flags.quiet = 1;
+                            break;
+                        case '?': usage(0);
+                            break;
+                        default:
+                            break;
+                    }
+                    continue;
+                }
+
+                /* ---- option takes an argument ------------------- */
+                {
                     const char *val = NULL;
 
                     /* inline: "-c10" or "-c=10" */
@@ -108,36 +123,27 @@ void parse_args(const int argc, char **argv) {
                     else if (i + 1 < argc) {
                         val = argv[++i];
                     } else {
-                        fprintf(stderr,
-                                "ft_ping: option '-%c' "
-                                "requires an argument\n", arg[j]
-                        );
+                        ping_error_exit(1, PING_ERR_OPTION_REQUIRES_ARG, (int)arg[j]);
                         usage(1);
                     }
 
                     /* Special handling for -i (interval): enforce minimum. */
                     if (arg[j] == 'i') {
                         if (!ft_str_is_double(val)) {
-                            fprintf(stderr,
-                                    "ft_ping: invalid numeric arg '%s' for -%c\n",
-                                    val, arg[j]
-                            );
-                            exit(2);
+                            ping_error_exit(2, PING_ERR_INVALID_NUMERIC_ARG, val, (int)arg[j]);
                         }
                         const double seconds = ft_atof(val);
-                        /* Minimum 1ms (like ping requiring privileges for shorter intervals). */
-                        if (seconds <= 0) {
-                            fprintf(stderr, "ft_ping: -i interval too short: Operation not permitted\n");
-                            exit(2);
+                        /* Reject <= 0 and anything that would round down to 0ms. */
+                        if (seconds <= 0.0 || (int)(seconds * 1000.0) < 1) {
+                            ping_error_exit(2, PING_ERR_INTERVAL_TOO_SHORT);
                         }
-                        flags.interval_ms = (int) (seconds * 1000.0);
+                        flags.interval_ms = (int)(seconds * 1000.0);
                         continue;
                     }
 
                     /* validate numeric argument */
                     if (!ft_str_is_number(val)) {
-                        fprintf(stderr, "ft_ping: invalid numeric arg '%s' for -%c\n", val, arg[j]
-                        );
+                        ping_error_exit(1, PING_ERR_INVALID_NUMERIC_ARG, val, (int)arg[j]);
                         usage(1);
                     }
 
@@ -151,16 +157,7 @@ void parse_args(const int argc, char **argv) {
                             break;
                         case 's': flags.payload_size = num;
                             break;
-                    }
-                }
-                /* ---- simple flag, no argument ------------------- */
-                else {
-                    switch (arg[j]) {
-                        case 'v': flags.verbose = 1;
-                            break;
-                        case 'q': flags.quiet = 1;
-                            break;
-                        case '?': usage(0);
+                        default:
                             break;
                     }
                 }
@@ -169,10 +166,7 @@ void parse_args(const int argc, char **argv) {
         /* ---------- positional (target) ----------------------------- */
         else {
             if (target) {
-                fprintf(stderr,
-                        "ft_ping: multiple destinations: '%s' and '%s'\n",
-                        target, arg
-                );
+                ping_error_exit(1, PING_ERR_MULTIPLE_DESTINATIONS, target, arg);
                 usage(1);
             }
             target = arg;
@@ -181,7 +175,7 @@ void parse_args(const int argc, char **argv) {
 
     /* ---------- final sanity checks --------------------------------- */
     if (!target) {
-        fprintf(stderr, "ft_ping: destination required\n");
+        ping_error_exit(1, PING_ERR_DESTINATION_REQUIRED);
         usage(1);
     }
     if (flags.quiet)

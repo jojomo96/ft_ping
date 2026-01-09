@@ -1,6 +1,7 @@
 #ifndef HEADER_H
 #define HEADER_H
 
+#include "ft_ping_error.h"
 
 #include "libft/ft_getopt.h"
 #include "libft/libft.h"
@@ -55,6 +56,6 @@ int create_raw_socket_with_timeout();
 
 void handle_interrupt(int sig);
 
-void parse_args(const int argc, char **argv);
+void parse_args(int argc, char **argv);
 
 #endif //HEADER_H
