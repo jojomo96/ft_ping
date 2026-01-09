@@ -8,7 +8,7 @@ static void usage(int exit_code) {
             "  -v             verbose output\n"
             "  -q             quiet output (overrides -v)\n"
             "  -c <count>     stop after <count> replies\n"
-            "  -i <ms>        interval between pings (milliseconds)\n"
+            "  -i <sec>       interval between pings (seconds; supports decimals)\n"
             "  -t <ttl>       set IPv4 TTL / IPv6 hop-limit\n"
             "  -s <bytes>     payload size (default 56)\n"
             "  -?             show this help and exit\n"
@@ -86,15 +86,16 @@ void parse_args(int argc, char **argv) {
 
             /* iterate over cluster: e.g. "-vq" becomes 'v' then 'q'    */
             for (size_t j = 1; arg[j]; ++j) {
+                char opt = arg[j];
                 int needs_arg = 0;
-                if (!lookup_option(arg[j], &needs_arg)) {
-                    ping_error_exit(1, PING_ERR_UNKNOWN_OPTION, (int)arg[j]);
+                if (!lookup_option(opt, &needs_arg)) {
+                    ping_error_exit(1, PING_ERR_UNKNOWN_OPTION, (int)opt);
                     usage(1);
                 }
 
                 /* ---- simple flag, no argument ------------------- */
                 if (!needs_arg) {
-                    switch (arg[j]) {
+                    switch (opt) {
                         case 'v': flags.verbose = 1;
                             break;
                         case 'q': flags.quiet = 1;
@@ -123,14 +124,14 @@ void parse_args(int argc, char **argv) {
                     else if (i + 1 < argc) {
                         val = argv[++i];
                     } else {
-                        ping_error_exit(1, PING_ERR_OPTION_REQUIRES_ARG, (int)arg[j]);
+                        ping_error_exit(1, PING_ERR_OPTION_REQUIRES_ARG, (int)opt);
                         usage(1);
                     }
 
                     /* Special handling for -i (interval): enforce minimum. */
-                    if (arg[j] == 'i') {
+                    if (opt == 'i') {
                         if (!ft_str_is_double(val)) {
-                            ping_error_exit(2, PING_ERR_INVALID_NUMERIC_ARG, val, (int)arg[j]);
+                            ping_error_exit(2, PING_ERR_INVALID_NUMERIC_ARG, val, (int)opt);
                         }
                         const double seconds = ft_atof(val);
                         /* Reject <= 0 and anything that would round down to 0ms. */
@@ -143,12 +144,12 @@ void parse_args(int argc, char **argv) {
 
                     /* validate numeric argument */
                     if (!ft_str_is_number(val)) {
-                        ping_error_exit(1, PING_ERR_INVALID_NUMERIC_ARG, val, (int)arg[j]);
+                        ping_error_exit(1, PING_ERR_INVALID_NUMERIC_ARG, val, (int)opt);
                         usage(1);
                     }
 
-                    int num = ft_atoi(val);
-                    switch (arg[j]) {
+                    const int num = ft_atoi(val);
+                    switch (opt) {
                         case 'c': flags.count = num;
                             break;
                         case 't': flags.ttl = num;

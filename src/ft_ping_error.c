@@ -9,29 +9,22 @@ static const char	*ping_error_prefix(t_ping_error err)
 	return ("ft_ping");
 }
 
-static void	ping_error_unknown_option(va_list ap)
+static void	ping_error_unknown_option(va_list *ap)
 {
-	int opt;
-
-	opt = va_arg(ap, int);
+	const int opt = va_arg(*ap, int);
 	fprintf(stderr, "unknown option '-%c'\n", (char)opt);
 }
 
-static void	ping_error_option_requires_arg(va_list ap)
+static void	ping_error_option_requires_arg(va_list *ap)
 {
-	int opt;
-
-	opt = va_arg(ap, int);
+	const int opt = va_arg(*ap, int);
 	fprintf(stderr, "option '-%c' requires an argument\n", (char)opt);
 }
 
-static void	ping_error_invalid_numeric_arg(va_list ap)
+static void	ping_error_invalid_numeric_arg(va_list *ap)
 {
-	const char	*val;
-	int			opt;
-
-	val = va_arg(ap, const char *);
-	opt = va_arg(ap, int);
+	const char *val = va_arg(*ap, const char *);
+	const int opt = va_arg(*ap, int);
 	fprintf(stderr, "invalid numeric arg '%s' for -%c\n", val, (char)opt);
 }
 
@@ -41,13 +34,13 @@ static void	ping_error_vprint(t_ping_error err, va_list ap)
 	switch (err)
 	{
 		case PING_ERR_UNKNOWN_OPTION:
-			ping_error_unknown_option(ap);
+			ping_error_unknown_option(&ap);
 			break;
 		case PING_ERR_OPTION_REQUIRES_ARG:
-			ping_error_option_requires_arg(ap);
+			ping_error_option_requires_arg(&ap);
 			break;
 		case PING_ERR_INVALID_NUMERIC_ARG:
-			ping_error_invalid_numeric_arg(ap);
+			ping_error_invalid_numeric_arg(&ap);
 			break;
 		case PING_ERR_INTERVAL_TOO_SHORT:
 			/* Matches the wording you asked for. */
