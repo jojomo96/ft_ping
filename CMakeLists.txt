@@ -12,7 +12,7 @@ include_directories(include)
 add_subdirectory(external/libft)
 
 # Gather your source files
-file(GLOB_RECURSE SOURCES "src/*.c")
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.c")
 
 # Define the executable
 add_executable(${PROJECT_NAME} ${SOURCES})
