@@ -46,13 +46,9 @@ extern int should_stop;
 
 uint16_t checksum(void *data, int len);
 
-void parse_flags_and_target(int argc, char **argv);
-
 void resolve_destination(const char *hostname);
 
 void set_socket_timeout(int sockfd);
-
-int create_raw_socket_with_timeout();
 
 void handle_interrupt(int sig);
 

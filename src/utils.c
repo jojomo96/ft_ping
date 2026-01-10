@@ -19,38 +19,6 @@ uint16_t checksum(void *data, int len) {
     return (uint16_t)(~sum);
 }
 
-void parse_flags_and_target(int argc, char **argv) {
-    int c;
-    while ((c = ft_getopt(argc, argv, "c:v?")) != -1) {
-        switch (c) {
-            case 'v':
-                flags.verbose = 1;
-                break;
-            case 'c':
-                errno = 0;
-                char *endptr;
-                long val = strtol(ft_optarg, &endptr, 10);
-
-                // Check for various possible errors
-                if (errno != 0 || *endptr != '\0' || val <= 0 || val > INT_MAX) {
-                    fprintf(stderr, "Invalid count: %s\n", ft_optarg);
-                    exit(1);
-                }
-
-                flags.count = (int)val;
-                break;
-            case '?':
-                printf("Usage: ft_ping [-v] <hostname/IP>\n");
-                exit(0);
-            default:
-                fprintf(stderr, "Usage: ft_ping [-v] <hostname/IP>\n");
-                exit(1);
-        }
-    }
-
-    target = argv[ft_optind];
-}
-
 void resolve_destination(const char *hostname) {
     struct addrinfo hints, *res;
     ft_memset(&hints, 0, sizeof(hints));
@@ -84,16 +52,6 @@ void set_socket_timeout(int sockfd) {
         close(sockfd);
         exit(1);
     }
-}
-
-int create_raw_socket_with_timeout() {
-    const int sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-    if (sockfd < 0) {
-        perror("Socket creation failed");
-        exit(1);
-    }
-    set_socket_timeout(sockfd);
-    return sockfd;
 }
 
 void handle_interrupt(const int sig) {
