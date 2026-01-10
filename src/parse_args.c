@@ -84,6 +84,28 @@ void parse_args(int argc, char **argv) {
                 break;
             }
 
+            if (ft_strncmp(arg, "--ttl", 5) == 0 || ft_strncmp(arg, "-ttl", 4) == 0) {
+                char *val = NULL;
+
+                /* Check if value is attached with '=' (e.g. --ttl=64) */
+                char *eq = ft_strchr(arg, '=');
+                if (eq) {
+                    val = eq + 1;
+                }
+                /* Else take the next argument (e.g. --ttl 64) */
+                else if (i + 1 < argc) {
+                    val = argv[++i];
+                } else {
+                    ping_error_exit(1, PING_ERR_OPTION_REQUIRES_ARG, 0); // 0 indicates generic error
+                }
+
+                if (!ft_str_is_number(val)) {
+                    ping_error_exit(1, PING_ERR_INVALID_NUMERIC_ARG, val, 0);
+                }
+                flags.ttl = ft_atoi(val);
+                continue; /* Skip the short-option loop for this argument */
+            }
+
             /* iterate over cluster: e.g. "-vq" becomes 'v' then 'q'    */
             for (size_t j = 1; arg[j]; ++j) {
                 const char opt = arg[j];
@@ -182,3 +204,5 @@ void parse_args(int argc, char **argv) {
     if (flags.quiet)
         flags.verbose = 0; /* -q overrides -v */
 }
+
+
