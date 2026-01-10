@@ -1,8 +1,6 @@
 #ifndef HEADER_H
 #define HEADER_H
 
-#include "ft_ping_error.h"
-
 #include "libft/ft_getopt.h"
 #include "libft/libft.h"
 #include <stdio.h>
@@ -15,6 +13,8 @@
 #include <netinet/ip.h>
 #include <limits.h>
 #include <sys/errno.h>
+
+#include "ft_messages.h"
 
 
 #define ICMP_ECHO       8
@@ -60,9 +60,6 @@ void ft_usage(int exit_code);
 
 void parse_args(int argc, char **argv);
 
-void    ping_error_exit(const char *msg, const char *arg);
-void    ping_warn(const char *msg, const char *arg);
-
 /* --- Option Handlers (src/args_handlers.c) --- */
 void    handle_verbose(const char *val);
 void    handle_quiet(const char *val);
@@ -72,6 +69,7 @@ void    handle_ttl(const char *val);
 void    handle_size(const char *val);
 void    handle_timeout(const char *val);
 void    handle_interval(const char *val);
+
 
 typedef void (*t_opt_handler)(const char *val);
 
@@ -88,5 +86,7 @@ typedef struct s_ping_opt {
     const char      *desc;        /* For usage */
     const char      *arg_label;   /* Label for help */
 } t_ping_opt;
+
+extern const t_ping_opt g_options[];
 
 #endif //HEADER_H

@@ -1,4 +1,4 @@
-#include "ping_options.h"
+#include "ft_ping.h"
 
 const t_ping_opt g_options[] = {
     { "verbose",  'v', ARG_NONE, handle_verbose,  "verbose output", NULL },

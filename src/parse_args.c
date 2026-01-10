@@ -1,6 +1,6 @@
 /* ft_ping_args.c ------------------------------------------------------- */
 #include "ft_ping.h"
-#include "ping_options.h"
+
 
 static int match_long(const char *arg, const t_ping_opt *opt, char **val_out) {
     if (!opt->long_name) return (0);
@@ -13,12 +13,18 @@ static int match_long(const char *arg, const t_ping_opt *opt, char **val_out) {
     if (ft_strncmp(name, opt->long_name, len) != 0) return (0);
 
     const char suffix = name[len];
-    if (suffix == '\0') { *val_out = NULL; return (1); }
-    if (suffix == '=')  { *val_out = (char *)(name + len + 1); return (1); }
+    if (suffix == '\0') {
+        *val_out = NULL;
+        return (1);
+    }
+    if (suffix == '=') {
+        *val_out = (char *) (name + len + 1);
+        return (1);
+    }
 
     /* Support attached style (--ttl99) if option expects argument */
     if (opt->type == ARG_REQ && ft_isdigit(suffix)) {
-        *val_out = (char *)(name + len);
+        *val_out = (char *) (name + len);
         return (1);
     }
     return (0);
@@ -27,16 +33,17 @@ static int match_long(const char *arg, const t_ping_opt *opt, char **val_out) {
 /* --- Main Engine --- */
 
 void parse_args(int argc, char **argv) {
-    /* Initialize defaults */
-    flags = (t_flags){ .interval_ms = 1000, .ttl = 64, .payload_size = 56, .timeout = 1000, .count = -1 };
+    flags = (t_flags){.interval_ms = 1000, .ttl = 64, .payload_size = 56, .timeout = 1000, .count = -1};
     target = NULL;
 
     for (int i = 1; i < argc; ++i) {
         char *arg = argv[i];
 
-        /* 1. Positional or empty */
+        /* 1. Positional */
         if (arg[0] != '-' || arg[1] == '\0') {
-            if (target) ping_error_exit("multiple destinations provided", arg);
+            if (target) {
+                ping_fatal(MSG_ERR_MULTIPLE_DEST, arg);
+            }
             target = arg;
             continue;
         }
@@ -45,7 +52,9 @@ void parse_args(int argc, char **argv) {
         if (ft_strcmp(arg, "--") == 0) {
             i++;
             if (i < argc && !target) target = argv[i++];
-            if (i < argc) ping_error_exit("unexpected argument", argv[i]);
+            if (i < argc) {
+                ping_fatal(MSG_ERR_UNEXPECTED_ARG, argv[i]);
+            }
             break;
         }
 
@@ -60,11 +69,12 @@ void parse_args(int argc, char **argv) {
             }
         }
 
-        /* B. Try Short Options (Cluster) */
+        /* B. Try Short Options */
         if (!match) {
+            /* Check if it looked like a long option (begins with --) */
             if (arg[1] == '-') {
-                fprintf(stderr, "ft_ping: unrecognized option '%s'\n", arg);
-                ft_usage(1); /* Or exit(1) if you prefer not to print help */
+                ping_msg(MSG_ERR_UNRECOG_OPT, arg);
+                ft_usage(1);
             }
 
             for (size_t j = 1; arg[j]; j++) {
@@ -77,20 +87,20 @@ void parse_args(int argc, char **argv) {
                 }
 
                 if (!short_match) {
-                    fprintf(stderr, "ft_ping: unknown option -- '%c'\n", arg[j]);
+                    ping_msg(MSG_ERR_UNKNOWN_OPT, arg[j]);
                     ft_usage(1);
                 }
 
                 if (short_match->type == ARG_REQ) {
-                    if (arg[j + 1]) val = &arg[j + 1];      /* Attached (-c5) */
-                    else if (i + 1 < argc) val = argv[++i]; /* Detached (-c 5) */
-                    else ping_error_exit("option requires an argument", NULL);
+                    if (arg[j + 1]) val = &arg[j + 1];
+                    else if (i + 1 < argc) val = argv[++i];
+                    else ping_fatal(MSG_ERR_OPT_REQ_ARG, "NULL"); /* Generic error for missing arg */
 
                     short_match->handler(val);
-                    break; /* Consumed rest of cluster */
+                    break;
                 } else {
                     short_match->handler(NULL);
-                    if (short_match->handler == handle_help) ft_usage(1);
+                    if (short_match->handler == handle_help) ft_usage(0);
                 }
             }
             continue;
@@ -101,18 +111,18 @@ void parse_args(int argc, char **argv) {
             if (match->type == ARG_REQ) {
                 if (!val) {
                     if (i + 1 < argc) val = argv[++i];
-                    else ping_error_exit("option requires an argument", match->long_name);
+                    else ping_fatal(MSG_ERR_OPT_REQ_ARG, match->long_name);
                 }
                 match->handler(val);
             } else {
                 match->handler(NULL);
-                if (match->handler == handle_help) ft_usage(1);
+                if (match->handler == handle_help) ft_usage(0);
             }
         }
     }
 
     if (!target) {
-        fprintf(stderr, "ft_ping: destination required\n");
+        ping_msg(MSG_ERR_DEST_REQ);
         ft_usage(1);
     }
     if (flags.quiet) flags.verbose = 0;
