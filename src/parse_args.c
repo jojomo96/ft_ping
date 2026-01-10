@@ -1,5 +1,6 @@
 /* ft_ping_args.c ------------------------------------------------------- */
 #include "ft_ping.h"
+#include "ping_options.h"
 
 static int match_long(const char *arg, const t_ping_opt *opt, char **val_out) {
     if (!opt->long_name) return (0);
@@ -7,11 +8,11 @@ static int match_long(const char *arg, const t_ping_opt *opt, char **val_out) {
     if (ft_strncmp(arg, "--", 2) != 0) return (0);
 
     const char *name = arg + 2;
-    size_t len = ft_strlen(opt->long_name);
+    const size_t len = ft_strlen(opt->long_name);
 
     if (ft_strncmp(name, opt->long_name, len) != 0) return (0);
 
-    char suffix = name[len];
+    const char suffix = name[len];
     if (suffix == '\0') { *val_out = NULL; return (1); }
     if (suffix == '=')  { *val_out = (char *)(name + len + 1); return (1); }
 

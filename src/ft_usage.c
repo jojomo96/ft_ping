@@ -1,4 +1,5 @@
 #include "ft_ping.h"
+#include "ping_options.h"
 
 void ft_usage(const int exit_code) {
     fprintf(stdout, "Usage: ft_ping [options] <destination>\n\nOptions:\n");
