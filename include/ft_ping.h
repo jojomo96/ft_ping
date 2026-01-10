@@ -49,8 +49,6 @@ uint16_t checksum(void *data, int len);
 
 void resolve_destination(const char *hostname);
 
-void set_socket_timeout(int sockfd);
-
 void handle_interrupt(int sig);
 
 void ft_usage(int exit_code);

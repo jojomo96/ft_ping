@@ -33,21 +33,3 @@ void resolve_destination(const char *hostname) {
 
     freeaddrinfo(res);
 }
-
-void set_socket_timeout(int sockfd) {
-    struct timeval timeout;
-    timeout.tv_sec = 1; // Set timeout to 1 second
-    timeout.tv_usec = 0;
-    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
-        perror("setsockopt failed");
-        close(sockfd);
-        exit(1);
-    }
-
-    int ttl = flags.ttl > 0 ? flags.ttl : 5; // Default TTL is 64
-    if (setsockopt(sockfd, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) < 0) {
-        perror("setsockopt TTL failed");
-        close(sockfd);
-        exit(1);
-    }
-}

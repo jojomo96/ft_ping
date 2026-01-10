@@ -8,7 +8,7 @@ static t_stats g_stats = {0, 0, 0.0, 0.0, 0.0, 0.0, {0, 0}};
 
 /* --- Helpers --- */
 
-void handle_interrupt(int sig) {
+void handle_interrupt(const int sig) {
     (void) sig;
     should_stop = 1;
 }
@@ -19,7 +19,7 @@ double get_time_ms(void) {
     return (tv.tv_sec * 1000.0) + (tv.tv_usec / 1000.0);
 }
 
-void update_stats(double rtt) {
+void update_stats(const double rtt) {
     if (g_stats.rx == 1 || rtt < g_stats.min) g_stats.min = rtt;
     if (g_stats.rx == 1 || rtt > g_stats.max) g_stats.max = rtt;
     g_stats.sum += rtt;
@@ -27,7 +27,7 @@ void update_stats(double rtt) {
 }
 
 void print_stats(void) {
-    double total = get_time_ms() -
+    const double total = get_time_ms() -
                    ((g_stats.start_tv.tv_sec * 1000.0) + (g_stats.start_tv.tv_usec / 1000.0));
     double loss = 0;
 
@@ -40,8 +40,8 @@ void print_stats(void) {
     );
 
     if (g_stats.rx > 0) {
-        double avg = g_stats.sum / g_stats.rx;
-        double mdev = sqrt((g_stats.sq_sum / g_stats.rx) - (avg * avg));
+        const double avg = g_stats.sum / g_stats.rx;
+        const double mdev = sqrt((g_stats.sq_sum / g_stats.rx) - (avg * avg));
         printf("rtt min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms\n",
                g_stats.min, avg, g_stats.max, mdev
         );
@@ -50,15 +50,11 @@ void print_stats(void) {
 
 /* --- Core Logic --- */
 
-int send_packet(int sock, int seq, int pid, char *packet) {
-    struct icmp_header *icmp;
-    size_t size;
-    size_t i;
-
-    size = sizeof(struct icmp_header) + flags.payload_size;
+int send_packet(const int sock, int seq, const int pid, char *packet) {
+    const size_t size = sizeof(struct icmp_header) + flags.payload_size;
     ft_memset(packet, 0, size);
 
-    icmp = (struct icmp_header *) packet;
+    struct icmp_header *icmp = (struct icmp_header *) packet;
     icmp->type = ICMP_ECHO;
     icmp->code = 0;
     /* FIX: Mask PID to 16 bits to match header field size */
@@ -72,7 +68,7 @@ int send_packet(int sock, int seq, int pid, char *packet) {
     }
 
     /* Fill Payload: Pattern */
-    i = sizeof(struct icmp_header) + sizeof(struct timeval);
+    size_t i = sizeof(struct icmp_header) + sizeof(struct timeval);
     while (i < size) {
         packet[i] = (char) ('!' + (i % 56));
         i++;
@@ -87,30 +83,26 @@ int send_packet(int sock, int seq, int pid, char *packet) {
     return (0);
 }
 
-void recv_packet(int sock, int pid) {
+void recv_packet(const int sock, const int pid) {
     char buf[4096] __attribute__((aligned(8)));
     struct msghdr msg = {0};
     struct iovec iov = {.iov_base = buf, .iov_len = sizeof(buf)};
-    ssize_t ret;
-    struct ip *ip;
-    struct icmp_header *icmp;
-    int hlen;
 
     msg.msg_iov = &iov;
     msg.msg_iovlen = 1;
 
     /* Loop until we get OUR packet, or timeout/error */
     while (1) {
-        ret = recvmsg(sock, &msg, 0);
+        const ssize_t ret = recvmsg(sock, &msg, 0);
         if (ret < 0) return; /* Timeout (EAGAIN) or Signal */
 
-        ip = (struct ip *) buf;
-        hlen = ip->ip_hl * 4;
+        const struct ip *ip = (struct ip *) buf;
+        const int hlen = ip->ip_hl * 4;
 
         /* Check if packet is large enough */
         if (ret < hlen + (int) sizeof(struct icmp_header)) continue;
 
-        icmp = (struct icmp_header *) (buf + hlen);
+        struct icmp_header *icmp = (struct icmp_header *) (buf + hlen);
 
         /* FIX: Compare ID masked to 16 bits */
         if (icmp->type == ICMP_ECHOREPLY && ntohs(icmp->id) == (pid & 0xFFFF)) {
@@ -119,7 +111,7 @@ void recv_packet(int sock, int pid) {
             double rtt = 0.0;
             if ((size_t) flags.payload_size >= sizeof(struct timeval) && (ret - hlen) >= (int) sizeof(struct
                     icmp_header) + (int) sizeof(struct timeval)) {
-                struct timeval *sent = (struct timeval *) (buf + hlen + sizeof(struct icmp_header));
+                const struct timeval *sent = (struct timeval *) (buf + hlen + sizeof(struct icmp_header));
                 struct timeval now;
                 gettimeofday(&now, NULL);
                 rtt = ((now.tv_sec - sent->tv_sec) * 1000.0) +
@@ -140,14 +132,12 @@ void recv_packet(int sock, int pid) {
     }
 }
 
-void ping_loop(int sock) {
-    int pid = getpid();
+void ping_loop(const int sock) {
+    const int pid = getpid();
     int seq = 0;
-    char *packet;
-    double start_time;
 
     /* Allocate packet buffer once to prevent memory leaks */
-    packet = malloc(sizeof(struct icmp_header) + flags.payload_size);
+    char *packet = malloc(sizeof(struct icmp_header) + flags.payload_size);
     if (!packet) {
         perror("malloc");
         return;
@@ -158,7 +148,7 @@ void ping_loop(int sock) {
     while (!should_stop) {
         if (flags.count > 0 && seq >= flags.count) break;
 
-        start_time = get_time_ms();
+        const double start_time = get_time_ms();
 
         if (send_packet(sock, seq, pid, packet) == 0)
             g_stats.tx++;
@@ -178,14 +168,13 @@ void ping_loop(int sock) {
     free(packet);
 }
 
-int main(int argc, char **argv) {
-    int sockfd;
+int main(const int argc, char **argv) {
     struct timeval tv_out;
 
     parse_args(argc, argv);
     resolve_destination(target);
 
-    sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+    const int sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
     if (sockfd < 0) {
         perror("ft_ping: socket");
         /* Hint for user if permission denied */
