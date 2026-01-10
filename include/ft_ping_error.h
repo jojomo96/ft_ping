@@ -21,10 +21,10 @@ typedef enum e_ping_error
 	PING_ERR_DESTINATION_REQUIRED,
 } 	t_ping_error;
 
-/* Prints the error to stderr. Does not exit. */
-void	ping_error_print(t_ping_error err, ...);
-
-/* Prints the error to stderr and exits with exit_code. */
-void	ping_error_exit(int exit_code, t_ping_error err, ...);
+// /* Prints the error to stderr. Does not exit. */
+// void	ping_error_print(t_ping_error err, ...);
+//
+// /* Prints the error to stderr and exits with exit_code. */
+// void	ping_error_exit(int exit_code, t_ping_error err, ...);
 
 #endif

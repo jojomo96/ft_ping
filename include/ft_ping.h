@@ -56,6 +56,50 @@ int create_raw_socket_with_timeout();
 
 void handle_interrupt(int sig);
 
+void ft_usage(int exit_code);
+
 void parse_args(int argc, char **argv);
+
+void    ping_error_exit(const char *msg, const char *arg);
+void    ping_warn(const char *msg, const char *arg);
+
+/* --- Option Handlers (src/args_handlers.c) --- */
+void    handle_verbose(const char *val);
+void    handle_quiet(const char *val);
+void    handle_help(const char *val);
+void    handle_count(const char *val);
+void    handle_ttl(const char *val);
+void    handle_size(const char *val);
+void    handle_timeout(const char *val);
+void    handle_interval(const char *val);
+
+typedef void (*t_opt_handler)(const char *val);
+
+typedef enum {
+    ARG_NONE, /* Flag only (-v) */
+    ARG_REQ   /* Requires value (-c 5) */
+} t_arg_type;
+
+typedef struct s_ping_opt {
+    const char      *long_name;   /* e.g. "ttl" */
+    char             short_name;  /* e.g. 't' */
+    t_arg_type       type;        /* Data type expected */
+    t_opt_handler    handler;     /* Function to call */
+    const char      *desc;        /* For usage */
+    const char      *arg_label;   /* Label for help */
+} t_ping_opt;
+
+/* ** CONFIGURATION TABLE ** */
+static const t_ping_opt g_options[] = {
+    { "verbose",  'v', ARG_NONE, handle_verbose,  "verbose output", NULL },
+    { "quiet",    'q', ARG_NONE, handle_quiet,    "quiet output",   NULL },
+    { "help",     '?', ARG_NONE, handle_help,     "print help and exit", NULL },
+    { "ttl",       0,  ARG_REQ,  handle_ttl,      "define time to live", "N" },
+    { "count",    'c', ARG_REQ,  handle_count,    "stop after <N> replies", "N" },
+    { "interval", 'i', ARG_REQ,  handle_interval, "wait <SEC> seconds", "SEC" },
+    { "size",     's', ARG_REQ,  handle_size,     "data size", "N" },
+    { "timeout",  'w', ARG_REQ,  handle_timeout,  "timeout", "N" },
+    { NULL, 0, ARG_NONE, NULL, NULL, NULL }
+};
 
 #endif //HEADER_H
