@@ -1,5 +1,3 @@
-
-
 #include "ft_ping.h"
 
 uint16_t checksum(void *data, int len) {
@@ -52,9 +50,4 @@ void set_socket_timeout(int sockfd) {
         close(sockfd);
         exit(1);
     }
-}
-
-void handle_interrupt(const int sig) {
-    (void)sig;
-    should_stop = 1;
 }

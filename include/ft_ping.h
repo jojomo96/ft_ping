@@ -13,6 +13,7 @@
 #include <netinet/ip.h>
 #include <limits.h>
 #include <sys/errno.h>
+#include <signal.h>
 
 #include "ft_messages.h"
 
@@ -42,7 +43,7 @@ typedef struct s_flags {
 extern char *target;
 extern t_flags flags;
 extern struct sockaddr_in dest_addr;
-extern int should_stop;
+extern volatile sig_atomic_t should_stop;
 
 uint16_t checksum(void *data, int len);
 
@@ -84,5 +85,15 @@ typedef struct s_ping_opt {
 } t_ping_opt;
 
 extern const t_ping_opt g_options[];
+
+typedef struct s_stats {
+    long    tx;
+    long    rx;
+    double  min;
+    double  max;
+    double  sum;
+    double  sq_sum;
+    struct  timeval start_tv;
+} t_stats;
 
 #endif //HEADER_H
