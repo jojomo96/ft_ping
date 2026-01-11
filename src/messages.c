@@ -1,4 +1,6 @@
 #include "ft_ping.h"
+#include "ft_messages.h"
+#include <math.h>
 
 
 /*
@@ -97,4 +99,27 @@ void ft_usage(const int exit_code) {
         fprintf(stdout, "%-35s %s\n", buf, opt->desc);
     }
     exit(exit_code);
+}
+
+void print_stats(const t_stats *stats) {
+    if (!stats)
+        return;
+
+    const double total = get_time_ms() -
+                         ((stats->start_tv.tv_sec * 1000.0) + (stats->start_tv.tv_usec / 1000.0));
+    double loss = 0.0;
+
+    if (stats->tx > 0)
+        loss = ((stats->tx - stats->rx) * 100.0) / stats->tx;
+
+    printf("\n--- %s ping statistics ---\n", target);
+    printf("%ld packets transmitted, %ld received, %.0f%% packet loss, time %.0fms\n",
+           stats->tx, stats->rx, loss, total);
+
+    if (stats->rx > 0) {
+        const double avg = stats->sum / stats->rx;
+        const double mdev = sqrt((stats->sq_sum / stats->rx) - (avg * avg));
+        printf("rtt min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms\n",
+               stats->min, avg, stats->max, mdev);
+    }
 }

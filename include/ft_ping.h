@@ -15,8 +15,6 @@
 #include <sys/errno.h>
 #include <signal.h>
 
-#include "ft_messages.h"
-
 
 #define ICMP_ECHO       8
 #define ICMP_ECHOREPLY  0
@@ -44,6 +42,12 @@ extern char *target;
 extern t_flags flags;
 extern struct sockaddr_in dest_addr;
 extern volatile sig_atomic_t should_stop;
+
+/* --- Helpers (utils.c) --- */
+double  get_time_ms(void);
+
+/* --- Stats helpers (utils.c) --- */
+void    update_stats(double rtt);
 
 uint16_t checksum(void *data, int len);
 
@@ -93,5 +97,7 @@ typedef struct s_stats {
     double  sq_sum;
     struct  timeval start_tv;
 } t_stats;
+
+extern t_stats g_stats;
 
 #endif //HEADER_H

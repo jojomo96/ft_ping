@@ -6,6 +6,8 @@ struct sockaddr_in dest_addr = {0};
 volatile sig_atomic_t should_stop = 0;
 char *target = NULL;
 
+t_stats g_stats = {0, 0, 0.0, 0.0, 0.0, 0.0, {0, 0}};
+
 const t_ping_opt g_options[] = {
     { "verbose",  'v', ARG_NONE, handle_verbose,  "verbose output", NULL },
     { "quiet",    'q', ARG_NONE, handle_quiet,    "quiet output",   NULL },

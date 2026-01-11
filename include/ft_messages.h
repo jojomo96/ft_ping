@@ -39,4 +39,7 @@ typedef enum e_msg_id {
 void    ping_msg(t_msg_id id, ...);
 void    ping_fatal(t_msg_id id, ...);
 
+/* --- Runtime output (messages.c) --- */
+void    print_stats(const t_stats *stats);
+
 #endif

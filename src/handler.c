@@ -1,4 +1,5 @@
 #include "ft_ping.h"
+#include "ft_messages.h"
 
 
 void handle_verbose(const char *val) {

@@ -1,10 +1,9 @@
 #include "ft_ping.h"
+#include "ft_messages.h"
 #include <signal.h>
 #include <sys/time.h>
 #include <math.h> // For sqrt in stddev
 #include <string.h>
-
-static t_stats g_stats = {0, 0, 0.0, 0.0, 0.0, 0.0, {0, 0}};
 
 /* --- Helpers --- */
 
@@ -12,43 +11,6 @@ void handle_interrupt(const int sig) {
     (void) sig;
     should_stop = 1;
 }
-
-double get_time_ms(void) {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return (tv.tv_sec * 1000.0) + (tv.tv_usec / 1000.0);
-}
-
-void update_stats(const double rtt) {
-    if (g_stats.rx == 1 || rtt < g_stats.min) g_stats.min = rtt;
-    if (g_stats.rx == 1 || rtt > g_stats.max) g_stats.max = rtt;
-    g_stats.sum += rtt;
-    g_stats.sq_sum += rtt * rtt;
-}
-
-void print_stats(void) {
-    const double total = get_time_ms() -
-                   ((g_stats.start_tv.tv_sec * 1000.0) + (g_stats.start_tv.tv_usec / 1000.0));
-    double loss = 0;
-
-    if (g_stats.tx > 0)
-        loss = ((g_stats.tx - g_stats.rx) * 100.0) / g_stats.tx;
-
-    printf("\n--- %s ping statistics ---\n", target);
-    printf("%ld packets transmitted, %ld received, %.0f%% packet loss, time %.0fms\n",
-           g_stats.tx, g_stats.rx, loss, total
-    );
-
-    if (g_stats.rx > 0) {
-        const double avg = g_stats.sum / g_stats.rx;
-        const double mdev = sqrt((g_stats.sq_sum / g_stats.rx) - (avg * avg));
-        printf("rtt min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms\n",
-               g_stats.min, avg, g_stats.max, mdev
-        );
-    }
-}
-
-/* --- Core Logic --- */
 
 int send_packet(const int sock, int seq, const int pid, char *packet) {
     const size_t size = sizeof(struct icmp_header) + flags.payload_size;
@@ -208,7 +170,7 @@ int main(const int argc, char **argv) {
     printf("PING %s (%s): %d data bytes\n", target, ip_s, flags.payload_size);
 
     ping_loop(sockfd);
-    print_stats();
+    print_stats(&g_stats);
 
     close(sockfd);
     return (0);

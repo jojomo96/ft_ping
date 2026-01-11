@@ -33,3 +33,19 @@ void resolve_destination(const char *hostname) {
 
     freeaddrinfo(res);
 }
+
+double get_time_ms(void) {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (tv.tv_sec * 1000.0) + (tv.tv_usec / 1000.0);
+}
+
+void update_stats(const double rtt) {
+    if (rtt < 0)
+        return;
+    /* update_stats expects g_stats.rx to have been incremented by the caller */
+    if (g_stats.rx == 1 || rtt < g_stats.min) g_stats.min = rtt;
+    if (g_stats.rx == 1 || rtt > g_stats.max) g_stats.max = rtt;
+    g_stats.sum += rtt;
+    g_stats.sq_sum += rtt * rtt;
+}
