@@ -1,18 +1,29 @@
 #include "ft_ping.h"
 
-uint16_t checksum(void *data, int len) {
-    uint32_t sum = 0;
-    uint16_t *ptr = data;
+/* ** Standard Checksum (RFC 1071) - Alignment Safe version
+** Uses ft_memcpy to safely copy bytes into a 16-bit word before summing.
+*/
+uint16_t checksum(void *b, int len) {
+    unsigned char *buf = b;
+    unsigned int sum = 0;
+    uint16_t word;
 
     while (len > 1) {
-        sum += *ptr++;
+        ft_memcpy(&word, buf, 2); /* Safe copy 2 bytes */
+        sum += word;
+        buf += 2;
         len -= 2;
     }
-    if (len == 1)
-        sum += *(uint8_t *)ptr;
 
-    sum = (sum >> 16) + (sum & 0xFFFF);
-    sum += (sum >> 16);
+    if (len == 1) {
+        word = 0;
+        ft_memcpy(&word, buf, 1);
+        sum += word;
+    }
+
+    while (sum >> 16) {
+        sum = (sum & 0xFFFF) + (sum >> 16);
+    }
 
     return (uint16_t)(~sum);
 }
@@ -20,17 +31,15 @@ uint16_t checksum(void *data, int len) {
 void resolve_destination(const char *hostname) {
     struct addrinfo hints, *res;
     ft_memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET; // IPv4
+    hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_RAW;
     hints.ai_protocol = IPPROTO_ICMP;
 
     if (getaddrinfo(hostname, NULL, &hints, &res) != 0) {
-        fprintf(stderr, "Error resolving hostname: %s\n", hostname);
+        fprintf(stderr, "ft_ping: unknown host %s\n", hostname);
         exit(1);
     }
-
     ft_memcpy(&dest_addr, res->ai_addr, sizeof(struct sockaddr_in));
-
     freeaddrinfo(res);
 }
 
@@ -41,9 +50,7 @@ double get_time_ms(void) {
 }
 
 void update_stats(const double rtt) {
-    if (rtt < 0)
-        return;
-    /* update_stats expects g_stats.rx to have been incremented by the caller */
+    if (rtt < 0) return;
     if (g_stats.rx == 1 || rtt < g_stats.min) g_stats.min = rtt;
     if (g_stats.rx == 1 || rtt > g_stats.max) g_stats.max = rtt;
     g_stats.sum += rtt;
