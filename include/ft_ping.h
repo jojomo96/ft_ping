@@ -16,9 +16,12 @@
 #include <signal.h>
 
 
-#define ICMP_ECHO       8
-#define ICMP_ECHOREPLY  0
+#define ICMP_ECHO           8
+#define ICMP_ECHOREPLY      0
+#define ICMP_DEST_UNREACH   3
+#define ICMP_TIME_EXCEEDED  11
 #define PAYLOAD_SIZE 56
+
 
 struct icmp_header {
     uint8_t type; // ICMP message type
