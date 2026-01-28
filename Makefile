@@ -24,15 +24,23 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 
 # Build libft (calls Makefile in external/libft)
 $(LIBFT):
+	@if [ ! -f $(LIBFT_DIR)/Makefile ]; then \
+		echo "Initializing libft submodule..."; \
+		git submodule update --init --recursive; \
+	fi
 	@make -C $(LIBFT_DIR)
 
 clean:
 	@rm -rf $(OBJ_DIR)
-	@make -C $(LIBFT_DIR) clean
+	@if [ -f $(LIBFT_DIR)/Makefile ]; then \
+		make -C $(LIBFT_DIR) clean; \
+	fi
 
 fclean: clean
 	@rm -f $(NAME)
-	@make -C $(LIBFT_DIR) fclean
+	@if [ -f $(LIBFT_DIR)/Makefile ]; then \
+		make -C $(LIBFT_DIR) fclean; \
+	fi
 
 re: fclean all
 
