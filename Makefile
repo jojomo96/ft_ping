@@ -12,17 +12,23 @@ LIBFT       = $(LIBFT_DIR)/libft.a
 SRCS        = $(wildcard $(SRC_DIR)/*.c)
 OBJS        = $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
-all: $(NAME) cap
+CAP_NEED    := cap_net_raw+ep
+CAP_STAMP   := $(OBJ_DIR)/.cap_net_raw
+
+all: $(NAME) $(CAP_STAMP)
 
 $(NAME): $(LIBFT) $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) $(LIBFT) -o $(NAME) -lm
+	@rm -f $(CAP_STAMP)
 
-# Grant capability so ft_ping can open raw sockets without full root.
-# This requires sudo once during `make`. After that, running ./ft_ping works unprivileged.
-cap: $(NAME)
-	@printf "Setting CAP_NET_RAW on ./%s\n" "$(NAME)"
-	@sudo setcap cap_net_raw+ep ./$(NAME)
-	@getcap ./$(NAME) || true
+$(CAP_STAMP): $(NAME)
+	@mkdir -p $(OBJ_DIR)
+	@cur="$$(getcap -n ./$(NAME) 2>/dev/null | awk '{print $$2}')" ; \
+	if [ "$$cur" != "$(CAP_NEED)" ]; then \
+		echo "Setting CAP_NET_RAW on ./$(NAME)"; \
+		sudo setcap $(CAP_NEED) ./$(NAME); \
+	fi
+	@touch $@
 
 # Compile objects
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
@@ -34,7 +40,7 @@ $(LIBFT):
 	@if [ ! -f $(LIBFT_DIR)/Makefile ]; then \
 		echo "Initializing libft submodule..."; \
 		git submodule update --init external/libft || { \
-			echo "Error: Failed to initialize submodule. Please check your git configuration."; \
+			echo "Error: Failed to initialize submodule."; \
 			exit 1; \
 		}; \
 	fi
@@ -54,4 +60,4 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re cap
+.PHONY: all clean fclean re
