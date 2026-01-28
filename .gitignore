@@ -1,6 +1,7 @@
 # Compiled object files
 *.o
 *.obj
+obj/
 
 # Precompiled Headers
 *.gch
@@ -19,6 +20,7 @@
 *.exe
 *.out
 *.app
+ft_ping
 
 # CLion project files
 .idea/
