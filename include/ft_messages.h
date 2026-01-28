@@ -3,8 +3,8 @@
 
 #include <stdarg.h>
 
-/* ** Message IDs
-** Add new messages here.
+/* \*\* Message IDs
+\*\* Add new messages here.
 */
 typedef enum e_msg_id {
     MSG_USAGE_TITLE,        /* "Usage: ft_ping ..." */
@@ -31,15 +31,34 @@ typedef enum e_msg_id {
     MSG_ERR_INTERVAL_SHORT,   /* "interval too short: '%s'" */
 
     MSG_ERR_INVALID_TYPE,     /* "invalid type: '%s'" */
+
+    /* \-\-\- runtime/info \-\-\- */
+    MSG_ERR_UNKNOWN_HOST,     /* "unknown host: %s" */
+    MSG_ERR_SOCKET,           /* "socket: %s" */
+    MSG_ERR_SENDTO,           /* "sendto: %s" */
+    MSG_ERR_RECVMSG,          /* "recvmsg: %s" */
+    MSG_ERR_SETSOCKOPT_TIMEOUT, /* "setsockopt(SO\_RCVTIMEO): %s" */
+    MSG_ERR_SETSOCKOPT_TTL,     /* "setsockopt(IP\_TTL): %s" */
+
+    MSG_PING_HEADER,          /* "PING %s (%s): %d data bytes" */
+    MSG_PING_REPLY,           /* "%ld bytes from %s: icmp\_seq\=%d ttl\=%d time\=%.3f ms" */
+    MSG_PING_FROM,            /* "From %s: icmp\_seq\=%d %s" */
+
+    MSG_STATS_HEADER,         /* "--- %s ping statistics ---" */
+    MSG_STATS_SUMMARY,        /* "%ld packets transmitted, %ld received, %.0f%% packet loss, time %.0fms" */
+    MSG_STATS_RTT,            /* "rtt min\/avg\/max\/mdev \= %.3f\/%.3f\/%.3f\/%.3f ms" */
+
+    MSG_USAGE_OPTIONS_HEADER, /* "Options:" */
+    MSG_USAGE_OPTION_LINE,    /* "%-35s %s" */
 } t_msg_id;
 
 /*
-** Output Functions
+\*\* Output Functions
 */
 void    ping_msg(t_msg_id id, ...);
 void    ping_fatal(t_msg_id id, ...);
 
-/* --- Runtime output (messages.c) --- */
+/* \-\-\- Runtime output (messages.c) \-\-\- */
 void    print_stats(const t_stats *stats);
 
 #endif

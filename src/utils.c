@@ -1,15 +1,15 @@
 #include "ft_ping.h"
+#include "ft_messages.h"
+#include <string.h>
 
-/* ** Standard Checksum (RFC 1071) - Alignment Safe version
-** Uses ft_memcpy to safely copy bytes into a 16-bit word before summing.
-*/
+
 uint16_t checksum(void *b, int len) {
     unsigned char *buf = b;
     unsigned int sum = 0;
     uint16_t word;
 
     while (len > 1) {
-        ft_memcpy(&word, buf, 2); /* Safe copy 2 bytes */
+        ft_memcpy(&word, buf, 2);
         sum += word;
         buf += 2;
         len -= 2;
@@ -36,8 +36,7 @@ void resolve_destination(const char *hostname) {
     hints.ai_protocol = IPPROTO_ICMP;
 
     if (getaddrinfo(hostname, NULL, &hints, &res) != 0) {
-        fprintf(stderr, "ft_ping: unknown host %s\n", hostname);
-        exit(1);
+        ping_fatal(MSG_ERR_UNKNOWN_HOST, hostname);
     }
     ft_memcpy(&dest_addr, res->ai_addr, sizeof(struct sockaddr_in));
     freeaddrinfo(res);

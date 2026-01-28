@@ -78,7 +78,6 @@ uint16_t checksum(void *data, int len);
 void     resolve_destination(const char *hostname);
 void     ft_usage(int exit_code);
 void     parse_args(int argc, char **argv);
-void     print_stats(const t_stats *stats);
 
 /* Option Handlers */
 typedef void (*t_opt_handler)(const char *val);

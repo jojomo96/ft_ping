@@ -1,11 +1,12 @@
 #include "ft_ping.h"
 #include "ft_messages.h"
 #include <math.h>
+#include <stdio.h>
 
 
 /*
-** Message Table
-** The order MUST match the t_msg_id enum.
+\*\* Message Table
+\*\* The order MUST match the t\_msg\_id enum.
 */
 static const char *g_msg_table[] = {
     [MSG_USAGE_TITLE] = "Usage: ft_ping [options] <destination>",
@@ -32,14 +33,30 @@ static const char *g_msg_table[] = {
     [MSG_ERR_INTERVAL_SHORT] = "interval too short: '%s'",
 
     [MSG_ERR_INVALID_TYPE] = "invalid type: '%s'",
+
+    /* runtime/info */
+    [MSG_ERR_UNKNOWN_HOST] = "unknown host: %s",
+    [MSG_ERR_SOCKET] = "socket: %s",
+    [MSG_ERR_SENDTO] = "sendto: %s",
+    [MSG_ERR_RECVMSG] = "recvmsg: %s",
+    [MSG_ERR_SETSOCKOPT_TIMEOUT] = "setsockopt(SO_RCVTIMEO): %s",
+    [MSG_ERR_SETSOCKOPT_TTL] = "setsockopt(IP_TTL): %s",
+
+    [MSG_PING_HEADER] = "PING %s (%s): %d data bytes",
+    [MSG_PING_REPLY] = "%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms",
+    [MSG_PING_FROM] = "From %s: icmp_seq=%d %s",
+
+    [MSG_STATS_HEADER] = "--- %s ping statistics ---",
+    [MSG_STATS_SUMMARY] = "%ld packets transmitted, %ld received, %.0f%% packet loss, time %.0fms",
+    [MSG_STATS_RTT] = "rtt min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms",
+
+    [MSG_USAGE_OPTIONS_HEADER] = "Options:",
+    [MSG_USAGE_OPTION_LINE] = "%-35s %s",
 };
 
-/*
-** Internal helper to print the formatted message.
-** Adds "ft_ping: " prefix automatically.
-*/
 static void print_formatted(FILE *stream, t_msg_id id, va_list args) {
-    if (id < 0 || id >= (sizeof(g_msg_table) / sizeof(char *)))
+    const size_t n = sizeof(g_msg_table) / sizeof(g_msg_table[0]);
+    if ((size_t)id >= n || !g_msg_table[id])
         return;
 
     fprintf(stream, "ft_ping: ");
@@ -47,10 +64,6 @@ static void print_formatted(FILE *stream, t_msg_id id, va_list args) {
     fprintf(stream, "\n");
 }
 
-/*
-** Prints a message to stderr.
-** Usage: ping_msg(MSG_ERR_UNKNOWN_OPT, 'c');
-*/
 void ping_msg(t_msg_id id, ...) {
     va_list args;
 
@@ -59,10 +72,6 @@ void ping_msg(t_msg_id id, ...) {
     va_end(args);
 }
 
-/*
-** Prints a message to stderr and exits with status 1.
-** Usage: ping_fatal(MSG_ERR_DEST_REQ);
-*/
 void ping_fatal(t_msg_id id, ...) {
     va_list args;
 
@@ -73,30 +82,29 @@ void ping_fatal(t_msg_id id, ...) {
 }
 
 void ft_usage(const int exit_code) {
-    fprintf(stdout, "Usage: ft_ping [options] <destination>\n\nOptions:\n");
+    /* Keep everything routed through messages.c */
+    ping_msg(MSG_USAGE_TITLE);
+    ping_msg(MSG_USAGE_OPTIONS_HEADER);
+
     for (int i = 0; g_options[i].handler; i++) {
         char buf[64];
         int len = 0;
         const t_ping_opt *opt = &g_options[i];
 
-        /* Format short opt */
         if (opt->short_name)
             len += sprintf(buf + len, "  -%c", opt->short_name);
         else
             len += sprintf(buf + len, "    ");
 
-        /* Format separator */
         len += sprintf(buf + len, "%s", (opt->short_name && opt->long_name) ? ", " : "  ");
 
-        /* Format long opt */
         if (opt->long_name)
             len += sprintf(buf + len, "--%s", opt->long_name);
 
-        /* Format argument label */
         if (opt->type == ARG_REQ && opt->arg_label)
             len += sprintf(buf + len, " <%s>", opt->arg_label);
 
-        fprintf(stdout, "%-35s %s\n", buf, opt->desc);
+        ping_msg(MSG_USAGE_OPTION_LINE, buf, opt->desc);
     }
     exit(exit_code);
 }
@@ -112,14 +120,13 @@ void print_stats(const t_stats *stats) {
     if (stats->tx > 0)
         loss = ((stats->tx - stats->rx) * 100.0) / stats->tx;
 
-    printf("\n--- %s ping statistics ---\n", target);
-    printf("%ld packets transmitted, %ld received, %.0f%% packet loss, time %.0fms\n",
-           stats->tx, stats->rx, loss, total);
+    /* Header on its own line (leading newline without printf) */
+    ping_msg(MSG_STATS_HEADER, target);
+    ping_msg(MSG_STATS_SUMMARY, stats->tx, stats->rx, loss, total);
 
     if (stats->rx > 0) {
         const double avg = stats->sum / stats->rx;
         const double mdev = sqrt((stats->sq_sum / stats->rx) - (avg * avg));
-        printf("rtt min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms\n",
-               stats->min, avg, stats->max, mdev);
+        ping_msg(MSG_STATS_RTT, stats->min, avg, stats->max, mdev);
     }
 }
