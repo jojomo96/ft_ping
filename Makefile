@@ -12,10 +12,17 @@ LIBFT       = $(LIBFT_DIR)/libft.a
 SRCS        = $(wildcard $(SRC_DIR)/*.c)
 OBJS        = $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
-all: $(NAME)
+all: $(NAME) cap
 
 $(NAME): $(LIBFT) $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) $(LIBFT) -o $(NAME) -lm
+
+# Grant capability so ft_ping can open raw sockets without full root.
+# This requires sudo once during `make`. After that, running ./ft_ping works unprivileged.
+cap: $(NAME)
+	@printf "Setting CAP_NET_RAW on ./%s\n" "$(NAME)"
+	@sudo setcap cap_net_raw+ep ./$(NAME)
+	@getcap ./$(NAME) || true
 
 # Compile objects
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
@@ -47,4 +54,4 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re cap
