@@ -126,7 +126,7 @@ void print_stats(const t_stats *stats) {
 
     if (stats->rx > 0) {
         const double avg = stats->sum / stats->rx;
-        const double mdev = sqrt((stats->sq_sum / stats->rx) - (avg * avg));
+        const double mdev = ft_sqrt((stats->sq_sum / stats->rx) - (avg * avg));
         ping_msg(MSG_STATS_RTT, stats->min, avg, stats->max, mdev);
     }
 }
