@@ -26,7 +26,10 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 $(LIBFT):
 	@if [ ! -f $(LIBFT_DIR)/Makefile ]; then \
 		echo "Initializing libft submodule..."; \
-		git submodule update --init --recursive; \
+		git submodule update --init external/libft || { \
+			echo "Error: Failed to initialize submodule. Please check your git configuration."; \
+			exit 1; \
+		}; \
 	fi
 	@make -C $(LIBFT_DIR)
 
