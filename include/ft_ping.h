@@ -12,11 +12,10 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <netinet/ip.h>
-#include <netinet/ip_icmp.h> /* Use standard system headers for ICMP struct if possible, else custom */
+#include <netinet/ip_icmp.h>
 #include <limits.h>
 #include <sys/errno.h>
 #include <signal.h>
-#include <poll.h>
 
 /* Custom ICMP defines if not available */
 #ifndef ICMP_ECHO
