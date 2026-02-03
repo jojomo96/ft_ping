@@ -33,11 +33,11 @@
 
 /* Re-definition of ICMP header to avoid dependency issues */
 struct my_icmp_header {
-    uint8_t type;
-    uint8_t code;
-    uint16_t checksum;
-    uint16_t id;
-    uint16_t sequence;
+    uint8_t type;      // 8 for Request, 0 for Reply, 11 for Time Exceeded, etc.
+    uint8_t code;      // Usually 0 for Echo
+    uint16_t checksum; // Critical for error checking
+    uint16_t id;       // Unique ID to identify THIS ping process
+    uint16_t sequence; // 1, 2, 3... to track packet loss/ordering
 } __attribute__((packed));
 
 /* Globals & Structs */

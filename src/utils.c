@@ -3,6 +3,24 @@
 #include <string.h>
 
 
+/*
+** Function: checksum
+** ------------------
+** Calculates the 16-bit One's Complement checksum for ICMP/IP headers.
+**
+** This implementation is designed for safety and portability:
+** 1. Alignment Safety: Instead of casting `void *data` directly to `uint16_t*`
+** (which causes undefined behavior or SIGBUS on non-aligned memory on
+** strict architectures like ARM/SPARC), we use `ft_memcpy` to copy
+** bytes into a local `uint16_t` variable.
+** 2. Endianness: The logic handles both Big and Little Endian architectures
+** correctly by processing the buffer as a stream of bytes.
+**
+** @param data  Pointer to the buffer to checksum.
+** @param len   Length of the buffer in bytes.
+**
+** @return      The 1's complement of the 1's complement sum (network byte order).
+*/
 uint16_t checksum(void *b, int len) {
     unsigned char *buf = b;
     unsigned int sum = 0;
