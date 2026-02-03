@@ -11,6 +11,7 @@ LIBFT       = $(LIBFT_DIR)/libft.a
 # Source files
 SRCS        = $(wildcard $(SRC_DIR)/*.c)
 OBJS        = $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+DEPS        = $(OBJS:.o=.d)
 
 CAP_NEED    := cap_net_raw+ep
 CAP_STAMP   := $(OBJ_DIR)/.cap_net_raw
@@ -33,29 +34,33 @@ $(CAP_STAMP): $(NAME)
 # Compile objects
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(OBJ_DIR)
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -MMD -MP -c $< -o $@
+
+-include $(DEPS)
 
 # Build libft (calls Makefile in external/libft)
 $(LIBFT):
 	@if [ ! -f $(LIBFT_DIR)/Makefile ]; then \
-		echo "Initializing libft submodule..."; \
-		git submodule update --init external/libft || { \
-			echo "Error: Failed to initialize submodule."; \
+		echo "libft submodule not initialized, initializing..."; \
+		if command -v git >/dev/null 2>&1; then \
+			git submodule update --init --recursive; \
+		else \
+			echo "Error: git not found, cannot initialize submodule."; \
 			exit 1; \
-		}; \
+		fi; \
 	fi
-	@make -C $(LIBFT_DIR)
+	@$(MAKE) -C $(LIBFT_DIR)
 
 clean:
 	@rm -rf $(OBJ_DIR)
 	@if [ -f $(LIBFT_DIR)/Makefile ]; then \
-		make -C $(LIBFT_DIR) clean; \
+		$(MAKE) -C $(LIBFT_DIR) clean; \
 	fi
 
 fclean: clean
 	@rm -f $(NAME)
 	@if [ -f $(LIBFT_DIR)/Makefile ]; then \
-		make -C $(LIBFT_DIR) fclean; \
+		$(MAKE) -C $(LIBFT_DIR) fclean; \
 	fi
 
 re: fclean all
