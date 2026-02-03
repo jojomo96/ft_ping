@@ -42,7 +42,10 @@ void handle_size(const char *val) {
     if (!ft_str_is_number(val))
         ping_fatal(MSG_ERR_INVALID_SIZE, val);
 
-    flags.payload_size = ft_atoi(val);
+    const int size = ft_atoi(val);
+    if (size > 65507) // Max TCP/IP payload
+        ping_fatal(MSG_ERR_SIZE_RANGE, val);
+    flags.payload_size = size;
 
     if (flags.payload_size < 0)
         ping_fatal(MSG_ERR_SIZE_RANGE, val);
