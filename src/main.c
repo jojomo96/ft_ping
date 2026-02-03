@@ -215,6 +215,15 @@ int main(int argc, char **argv) {
     parse_args(argc, argv);
     resolve_destination(target);
 
+    /* Handle Timeout (-w) */
+    if (flags.timeout > 0) {
+        /* When the alarm fires, it sends SIGALRM.
+         * We reuse handle_interrupt to set should_stop = 1,
+         * effectively stopping the loop cleanly. */
+        signal(SIGALRM, handle_interrupt);
+        alarm(flags.timeout);
+    }
+
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
     if (sock < 0) {
         ping_fatal(MSG_ERR_SOCKET, strerror(errno));
