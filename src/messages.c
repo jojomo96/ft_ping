@@ -59,7 +59,7 @@ static void print_formatted(FILE *stream, t_msg_id id, va_list args) {
     if ((size_t)id >= n || !g_msg_table[id])
         return;
 
-    fprintf(stream, "ft_ping: ");
+    //fprintf(stream, "ft_ping: ");
     vfprintf(stream, g_msg_table[id], args);
     fprintf(stream, "\n");
 }
