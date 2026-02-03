@@ -43,7 +43,7 @@ uint16_t checksum(void *b, int len) {
         sum = (sum & 0xFFFF) + (sum >> 16);
     }
 
-    return (uint16_t)(~sum);
+    return (uint16_t) (~sum);
 }
 
 void resolve_destination(const char *hostname) {

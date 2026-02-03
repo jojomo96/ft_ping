@@ -3,17 +3,17 @@
 
 
 void handle_verbose(const char *val) {
-    (void)val;
+    (void) val;
     flags.verbose = 1;
 }
 
 void handle_quiet(const char *val) {
-    (void)val;
+    (void) val;
     flags.quiet = 1;
 }
 
 void handle_help(const char *val) {
-    (void)val;
+    (void) val;
     /* Usually usage() prints the help text, exit is handled there or here */
     ft_usage(0);
 }
@@ -43,12 +43,10 @@ void handle_size(const char *val) {
         ping_fatal(MSG_ERR_INVALID_SIZE, val);
 
     const int size = ft_atoi(val);
-    if (size > 65507) // Max TCP/IP payload
+    if (size < 0 || size > 65507) // Max TCP/IP payload
         ping_fatal(MSG_ERR_SIZE_RANGE, val);
-    flags.payload_size = size;
 
-    if (flags.payload_size < 0)
-        ping_fatal(MSG_ERR_SIZE_RANGE, val);
+    flags.payload_size = size;
 }
 
 void handle_timeout(const char *val) {
@@ -56,6 +54,9 @@ void handle_timeout(const char *val) {
         ping_fatal(MSG_ERR_INVALID_TIMEOUT, val);
 
     flags.timeout = ft_atoi(val);
+
+    if (flags.timeout < 0 || flags.timeout > INT_MAX)
+        ping_fatal(MSG_ERR_INVALID_TIMEOUT, val);
 }
 
 void handle_interval(const char *val) {
@@ -67,5 +68,8 @@ void handle_interval(const char *val) {
     if (d < 0.002 && d != 0.0) /* Safety limit for non-flood */
         ping_fatal(MSG_ERR_INTERVAL_SHORT, val);
 
-    flags.interval_ms = (int)(d * 1000.0);
+    if (d > INT_MAX / 1000.0)
+        ping_fatal(MSG_ERR_INVALID_INTERVAL, val);
+
+    flags.interval_ms = (int) (d * 1000.0);
 }

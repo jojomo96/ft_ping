@@ -1,4 +1,3 @@
-/* ft_ping_args.c ------------------------------------------------------- */
 #include "ft_ping.h"
 #include "ft_messages.h"
 

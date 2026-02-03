@@ -6,7 +6,7 @@
 #include <string.h>
 
 void handle_interrupt(int sig) {
-    (void)sig;
+    (void) sig;
     should_stop = 1;
 }
 
@@ -17,11 +17,11 @@ static int handle_error_packet(const struct ip *ip, const struct my_icmp_header 
     /* * In an ICMP Error packet, the payload contains the IP header
      * plus the first 8 bytes of the original datagram that caused the error.
      */
-    const struct ip *orig_ip = (const struct ip *)((char *)icmp + 8);
+    const struct ip *orig_ip = (const struct ip *) ((char *) icmp + 8);
     int orig_ip_len = orig_ip->ip_hl * 4;
 
     /* The original ICMP header follows the original IP header */
-    const struct my_icmp_header *orig_icmp = (const struct my_icmp_header *)((char *)orig_ip + orig_ip_len);
+    const struct my_icmp_header *orig_icmp = (const struct my_icmp_header *) ((char *) orig_ip + orig_ip_len);
 
     /* Check if the error corresponds to our process ID */
     if (ntohs(orig_icmp->id) != (pid & 0xFFFF))
@@ -43,10 +43,10 @@ static int handle_error_packet(const struct ip *ip, const struct my_icmp_header 
 }
 
 int send_packet(int sock, int seq, int pid, char *packet) {
-    size_t pack_size = sizeof(struct my_icmp_header) + (size_t)flags.payload_size;
+    size_t pack_size = sizeof(struct my_icmp_header) + (size_t) flags.payload_size;
     ft_memset(packet, 0, pack_size);
 
-    struct my_icmp_header *icmp = (struct my_icmp_header *)packet;
+    struct my_icmp_header *icmp = (struct my_icmp_header *) packet;
     icmp->type = ICMP_ECHO;
     icmp->code = 0;
     icmp->id = htons(pid & 0xFFFF);
@@ -55,7 +55,7 @@ int send_packet(int sock, int seq, int pid, char *packet) {
 
     /* Embed timestamp if we have enough space */
     size_t offset = sizeof(struct my_icmp_header);
-    if ((size_t)flags.payload_size >= sizeof(struct timeval)) {
+    if ((size_t) flags.payload_size >= sizeof(struct timeval)) {
         struct timeval tv;
         gettimeofday(&tv, NULL);
         ft_memcpy(packet + offset, &tv, sizeof(tv));
@@ -64,13 +64,13 @@ int send_packet(int sock, int seq, int pid, char *packet) {
     /* Fill payload with pattern */
     size_t i = offset + sizeof(struct timeval);
     while (i < pack_size) {
-        packet[i] = (char)('!' + (i % 56));
+        packet[i] = (char) ('!' + (i % 56));
         i++;
     }
 
-    icmp->checksum = checksum(packet, (int)pack_size);
+    icmp->checksum = checksum(packet, (int) pack_size);
 
-    if (sendto(sock, packet, pack_size, 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr)) < 0) {
+    if (sendto(sock, packet, pack_size, 0, (struct sockaddr *) &dest_addr, sizeof(dest_addr)) < 0) {
         if (!flags.quiet)
             ping_msg(MSG_ERR_SENDTO, strerror(errno));
         return -1;
@@ -96,19 +96,19 @@ void recv_packet(int sock, int pid, char *buf, size_t buf_len) {
         }
 
         /* 1. Parse IP Header */
-        struct ip *ip = (struct ip *)buf;
+        struct ip *ip = (struct ip *) buf;
         int hlen = ip->ip_hl * 4;
 
-        if (bytes < hlen + (int)sizeof(struct my_icmp_header))
+        if (bytes < hlen + (int) sizeof(struct my_icmp_header))
             continue;
 
         /* 2. Parse ICMP Header */
-        struct my_icmp_header *icmp = (struct my_icmp_header *)(buf + hlen);
+        struct my_icmp_header *icmp = (struct my_icmp_header *) (buf + hlen);
 
         /* 3. Validate Checksum */
         uint16_t received_sum = icmp->checksum;
         icmp->checksum = 0;
-        uint16_t calculated_sum = checksum(icmp, (int)(bytes - hlen));
+        uint16_t calculated_sum = checksum(icmp, (int) (bytes - hlen));
         if (calculated_sum != received_sum) {
             /* Silently drop corrupted packets or warn if verbose */
             continue;
@@ -121,12 +121,12 @@ void recv_packet(int sock, int pid, char *buf, size_t buf_len) {
             double rtt = 0.0;
 
             size_t min_len = sizeof(struct my_icmp_header) + sizeof(struct timeval);
-            if ((size_t)(bytes - hlen) >= min_len && (size_t)flags.payload_size >= sizeof(struct timeval)) {
+            if ((size_t) (bytes - hlen) >= min_len && (size_t) flags.payload_size >= sizeof(struct timeval)) {
                 struct timeval sent_tv, curr_tv;
                 ft_memcpy(&sent_tv, buf + hlen + sizeof(struct my_icmp_header), sizeof(struct timeval));
                 gettimeofday(&curr_tv, NULL);
-                rtt = (double)(curr_tv.tv_sec - sent_tv.tv_sec) * 1000.0 +
-                      (double)(curr_tv.tv_usec - sent_tv.tv_usec) / 1000.0;
+                rtt = (double) (curr_tv.tv_sec - sent_tv.tv_sec) * 1000.0 +
+                      (double) (curr_tv.tv_usec - sent_tv.tv_usec) / 1000.0;
             }
             if (rtt < 0) rtt = 0;
             update_stats(rtt);
@@ -136,7 +136,7 @@ void recv_packet(int sock, int pid, char *buf, size_t buf_len) {
                 /* actual  sender */
                 inet_ntop(AF_INET, &ip->ip_src, from, sizeof(from));
 
-                ping_msg(MSG_PING_REPLY, (long)(bytes - hlen), from, ntohs(icmp->sequence), ip->ip_ttl, rtt);
+                ping_msg(MSG_PING_REPLY, (long) (bytes - hlen), from, ntohs(icmp->sequence), ip->ip_ttl, rtt);
             }
             return; /* Successfully processed our reply */
         }

@@ -56,7 +56,7 @@ static const char *g_msg_table[] = {
 
 static void print_formatted(FILE *stream, t_msg_id id, va_list args) {
     const size_t n = sizeof(g_msg_table) / sizeof(g_msg_table[0]);
-    if ((size_t)id >= n || !g_msg_table[id])
+    if ((size_t) id >= n || !g_msg_table[id])
         return;
 
     //fprintf(stream, "ft_ping: ");
