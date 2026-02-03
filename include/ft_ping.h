@@ -16,6 +16,7 @@
 #include <limits.h>
 #include <sys/errno.h>
 #include <signal.h>
+#include <math.h>
 
 /* Custom ICMP defines if not available */
 #ifndef ICMP_ECHO
