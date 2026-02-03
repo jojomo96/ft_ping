@@ -1,4 +1,5 @@
 #include "ft_ping.h"
+#include <stddef.h>
 
 // definitions (storage) for the globals declared as extern in `ft_ping.h`
 t_flags flags = {0};
