@@ -22,13 +22,13 @@ $(NAME): $(LIBFT) $(OBJS)
 	@rm -f $(CAP_STAMP)
 
 $(CAP_STAMP): $(NAME)
-#	@mkdir -p $(OBJ_DIR)
-#	@cur="$$(getcap -n ./$(NAME) 2>/dev/null | awk '{print $$2}')" ; \
-#	if [ "$$cur" != "$(CAP_NEED)" ]; then \
-#		echo "Setting CAP_NET_RAW on ./$(NAME)"; \
-#		sudo setcap $(CAP_NEED) ./$(NAME); \
-#	fi
-#	@touch $@
+	@mkdir -p $(OBJ_DIR)
+	@cur="$$(getcap -n ./$(NAME) 2>/dev/null | awk '{print $$2}')" ; \
+	if [ "$$cur" != "$(CAP_NEED)" ]; then \
+		echo "Setting CAP_NET_RAW on ./$(NAME)"; \
+		sudo setcap $(CAP_NEED) ./$(NAME); \
+	fi
+	@touch $@
 
 # Compile objects
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
