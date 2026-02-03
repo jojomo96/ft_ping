@@ -8,6 +8,7 @@
 void handle_interrupt(int sig) {
     (void) sig;
     should_stop = 1;
+    printf("\n");
 }
 
 /* * Helper to handle error packets (Type 3 & 11)
