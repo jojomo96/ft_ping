@@ -1,8 +1,6 @@
 #ifndef PING_MESSAGES_H
 #define PING_MESSAGES_H
 
-#include <stdarg.h>
-
 /* \*\* Message IDs
 \*\* Add new messages here.
 */

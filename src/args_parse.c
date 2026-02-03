@@ -1,5 +1,6 @@
 #include "ft_ping.h"
 #include "ft_messages.h"
+#include "libft/libft.h"
 
 
 static int match_long(const char *arg, const t_ping_opt *opt, char **val_out) {

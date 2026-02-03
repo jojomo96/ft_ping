@@ -1,6 +1,14 @@
 #include "ft_ping.h"
 #include "ft_messages.h"
-#include <string.h>
+#include "libft/libft.h"
+#include <stdint.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
 
 
 /*

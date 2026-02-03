@@ -1,9 +1,11 @@
 #include "ft_ping.h"
 #include "ft_messages.h"
+#include "libft/libft.h"
 #include <math.h>
+#include <stdarg.h>
 #include <stdio.h>
-
-
+#include <stdlib.h>
+#include <unistd.h>
 /*
 \*\* Message Table
 \*\* The order MUST match the t\_msg\_id enum.

@@ -1,9 +1,18 @@
 #include "ft_ping.h"
 #include "ft_messages.h"
+#include "libft/libft.h"
+
+#include <stdio.h>
 #include <signal.h>
 #include <sys/time.h>
-#include <errno.h>
 #include <string.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <errno.h>
 
 void handle_interrupt(int sig) {
     (void) sig;

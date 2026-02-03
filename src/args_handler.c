@@ -1,5 +1,8 @@
 #include "ft_ping.h"
 #include "ft_messages.h"
+#include "libft/libft.h"
+#include <limits.h>
+#include <math.h>
 
 
 static long long parse_ll_or_fatal(const char *val, t_msg_id invalid_id) {
@@ -32,7 +35,7 @@ void handle_count(const char *val) {
     if (count < 1 || count > INT_MAX)
         ping_fatal(MSG_ERR_COUNT_RANGE, val);
 
-    flags.count = (int)count;
+    flags.count = (int) count;
 }
 
 void handle_ttl(const char *val) {
@@ -41,7 +44,7 @@ void handle_ttl(const char *val) {
     if (ttl < 0 || ttl > 255)
         ping_fatal(MSG_ERR_TTL_RANGE, val);
 
-    flags.ttl = (int)ttl;
+    flags.ttl = (int) ttl;
 }
 
 void handle_size(const char *val) {
@@ -54,7 +57,7 @@ void handle_size(const char *val) {
     if (size > 65507)
         ping_fatal(MSG_ERR_INVALID_SIZE, val);
 
-    flags.payload_size = (int)size;
+    flags.payload_size = (int) size;
 }
 
 void handle_timeout(const char *val) {
@@ -63,7 +66,7 @@ void handle_timeout(const char *val) {
     if (timeout < 0 || timeout > INT_MAX)
         ping_fatal(MSG_ERR_INVALID_TIMEOUT, val);
 
-    flags.timeout = (int)timeout;
+    flags.timeout = (int) timeout;
 }
 
 void handle_interval(const char *val) {

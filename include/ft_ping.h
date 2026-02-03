@@ -2,21 +2,10 @@
 #ifndef HEADER_H
 #define HEADER_H
 
-#include "libft/ft_getopt.h"
-#include "libft/libft.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <sys/time.h>
-#include <netinet/ip.h>
-#include <netinet/ip_icmp.h>
-#include <limits.h>
-#include <sys/errno.h>
+#include <stdint.h>
 #include <signal.h>
-#include <math.h>
+#include <sys/time.h>
+#include <netinet/in.h>
 
 /* Custom ICMP defines if not available */
 #ifndef ICMP_ECHO
